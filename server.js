@@ -5,7 +5,6 @@ const fs = require('fs');
 const sqlite3 = require('sqlite3').verbose();
 const https = require('https');
 const xml2js = require('xml2js');
-const { spawn } = require('child_process');
 const axios = require('axios');
 
 const app = express();
@@ -35,6 +34,7 @@ function initDatabase() {
     download_folder TEXT DEFAULT '/downloads',
     username TEXT DEFAULT '',
     password TEXT DEFAULT '',
+    metube_url TEXT DEFAULT 'http://localhost:8081',
     created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
     updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
   )`, (err) => {
@@ -46,8 +46,8 @@ function initDatabase() {
         if (err) {
           console.error('Error checking settings:', err.message);
         } else if (row.count === 0) {
-          db.run(`INSERT INTO settings (aria2c_ip, aria2c_port, download_folder, username, password) 
-                  VALUES ('localhost', '6800', '/downloads', '', '')`);
+          db.run(`INSERT INTO settings (aria2c_ip, aria2c_port, download_folder, username, password, metube_url) 
+                  VALUES ('localhost', '6800', '/downloads', '', '', 'http://localhost:8081')`);
         }
       });
     }
@@ -120,7 +120,15 @@ app.get('/api/settings', (req, res) => {
 });
 
 app.post('/api/settings', (req, res) => {
-  const { aria2c_ip, aria2c_port, download_folder, username, password } = req.body;
+  const { aria2c_ip, aria2c_port, download_folder, username, password, metube_url } = req.body;
+  
+  // Use default values for backward compatibility
+  const aria2c_ip_val = aria2c_ip || 'localhost';
+  const aria2c_port_val = aria2c_port || '6800';
+  const download_folder_val = download_folder || './downloads';
+  const username_val = username || '';
+  const password_val = password || '';
+  const metube_url_val = metube_url || 'http://localhost:8081';
   
   db.run(`UPDATE settings SET 
           aria2c_ip = ?, 
@@ -128,9 +136,10 @@ app.post('/api/settings', (req, res) => {
           download_folder = ?, 
           username = ?, 
           password = ?,
+          metube_url = ?,
           updated_at = CURRENT_TIMESTAMP
           WHERE id = (SELECT id FROM settings ORDER BY id DESC LIMIT 1)`,
-    [aria2c_ip, aria2c_port, download_folder, username, password],
+    [aria2c_ip_val, aria2c_port_val, download_folder_val, username_val, password_val, metube_url_val],
     function(err) {
       if (err) {
         res.status(500).json({ error: err.message });
@@ -386,36 +395,9 @@ app.post('/api/channels/:id/check-videos', (req, res) => {
   });
 });
 
-// Debug endpoint to check available formats
-app.get('/api/videos/:id/formats', (req, res) => {
-  const { id } = req.params;
-  
-  // Get video info
-  db.get("SELECT video_id, video_url, title FROM videos WHERE id = ?", [id], (err, video) => {
-    if (err) {
-      return res.status(500).json({ error: err.message });
-    }
-    if (!video) {
-      return res.status(404).json({ error: 'Video not found' });
-    }
-    
-    // Get available formats using yt-dlp
-    getAvailableFormats(video.video_url)
-      .then(formats => {
-        res.json({
-          success: true,
-          formats: formats,
-          title: video.title
-        });
-      })
-      .catch(error => {
-        console.error('Error getting formats:', error);
-        res.status(500).json({ error: 'Failed to get available formats' });
-      });
-  });
-});
 
-// Add video download to aria2c
+
+// Add video download to MeTube
 app.post('/api/videos/:id/download', (req, res) => {
   const { id } = req.params;
   
@@ -428,42 +410,35 @@ app.post('/api/videos/:id/download', (req, res) => {
       return res.status(404).json({ error: 'Video not found' });
     }
     
-    // Get aria2c settings
+    // Get MeTube settings
     db.get("SELECT * FROM settings ORDER BY id DESC LIMIT 1", (err, settings) => {
       if (err) {
         return res.status(500).json({ error: 'Failed to get settings: ' + err.message });
       }
       if (!settings) {
-        return res.status(500).json({ error: 'No aria2c settings configured. Please configure in Settings first.' });
+        return res.status(500).json({ error: 'No MeTube settings configured. Please configure in Settings first.' });
       }
       
-      // Get download URL using yt-dlp then add to aria2c
-      getDownloadUrl(video.video_url)
-        .then(downloadInfo => {
-          console.log(`Download URL obtained for ${video.title}: ${downloadInfo.url.substring(0, 100)}...`);
-          return addToAria2c(downloadInfo.url, video.title, settings);
-        })
-        .then(aria2cResponse => {
+      // Send download request to MeTube
+      addToMeTube(video.video_url, video.title, settings)
+        .then(metubeResponse => {
           res.json({
             success: true,
-            message: `Added to aria2c: ${video.title}`,
-            gid: aria2cResponse.gid,
+            message: `Added to MeTube: ${video.title}`,
             title: video.title
           });
         })
         .catch(error => {
-          console.error('Error adding to aria2c:', error);
+          console.error('Error adding to MeTube:', error);
           
           // Provide more user-friendly error messages
-          let errorMessage = 'Failed to add download to aria2c';
-          if (error.message.includes('not available')) {
+          let errorMessage = 'Failed to add download to MeTube';
+          if (error.message.includes('ECONNREFUSED')) {
+            errorMessage = 'Failed to connect to MeTube. Check your settings and ensure MeTube is running.';
+          } else if (error.message.includes('ETIMEDOUT')) {
+            errorMessage = 'MeTube connection timed out. Check your settings.';
+          } else if (error.message.includes('not available')) {
             errorMessage = 'This video is not available for download (may be age-restricted or private)';
-          } else if (error.message.includes('format is not available')) {
-            errorMessage = 'No suitable download format available for this video';
-          } else if (error.message.includes('aria2c')) {
-            errorMessage = 'Failed to connect to aria2c. Check your settings and ensure aria2c is running.';
-          } else if (error.message.includes('yt-dlp failed')) {
-            errorMessage = 'Download service temporarily unavailable, please try again later';
           }
           
           res.status(500).json({ error: errorMessage });
@@ -474,242 +449,49 @@ app.post('/api/videos/:id/download', (req, res) => {
 
 
 
-function getDownloadUrl(videoUrl) {
-  return new Promise((resolve, reject) => {
-    // Use yt-dlp to get the highest quality MP4 format URL for aria2c
-    const ytdlp = spawn('yt-dlp', [
-      '--get-url',
-      '--format', 'bv*[height>=1080]+ba/bv*[height>=720]+ba/bv*+ba/b',
-      '--no-playlist',
-      '--no-warnings',
-      '--socket-timeout', '30',
-      '--extractor-args', 'youtube:player_client=android',
-      videoUrl
-    ]);
-    
-    // Add timeout
-    const timeout = setTimeout(() => {
-      ytdlp.kill();
-      reject(new Error('Request timed out'));
-    }, 30000); // 30 seconds timeout
-    
-    let stdout = '';
-    let stderr = '';
-    
-    ytdlp.stdout.on('data', (data) => {
-      stdout += data.toString();
-    });
-    
-    ytdlp.stderr.on('data', (data) => {
-      stderr += data.toString();
-    });
-    
-    ytdlp.on('close', (code) => {
-      clearTimeout(timeout);
-      if (code === 0) {
-        const url = stdout.trim();
-        if (url) {
-          resolve({
-            url: url,
-            format: 'high quality MP4 (1080p/4K)'
-          });
-        } else {
-          reject(new Error('No download URL found'));
-        }
-      } else {
-        // Try with a simpler format if the first attempt fails
-        getDownloadUrlFallback(videoUrl)
-          .then(resolve)
-          .catch(() => {
-            reject(new Error(`yt-dlp failed: ${stderr}`));
-          });
-      }
-    });
-    
-    ytdlp.on('error', (error) => {
-      clearTimeout(timeout);
-      reject(new Error(`Failed to execute yt-dlp: ${error.message}`));
-    });
-  });
-}
 
-function getDownloadUrlFallback(videoUrl) {
-  return new Promise((resolve, reject) => {
-    // Fallback to best available format if high quality not available
-    const ytdlp = spawn('yt-dlp', [
-      '--get-url',
-      '--format', 'bv*+ba/b',
-      '--no-playlist',
-      '--no-warnings',
-      '--socket-timeout', '30',
-      '--extractor-args', 'youtube:player_client=android',
-      videoUrl
-    ]);
-    
-    // Add timeout
-    const timeout = setTimeout(() => {
-      ytdlp.kill();
-      reject(new Error('Request timed out'));
-    }, 30000); // 30 seconds timeout
-    
-    let stdout = '';
-    let stderr = '';
-    
-    ytdlp.stdout.on('data', (data) => {
-      stdout += data.toString();
-    });
-    
-    ytdlp.stderr.on('data', (data) => {
-      stderr += data.toString();
-    });
-    
-    ytdlp.on('close', (code) => {
-      clearTimeout(timeout);
-      if (code === 0) {
-        const url = stdout.trim();
-        if (url) {
-          resolve({
-            url: url,
-            format: 'standard MP4 (fallback)'
-          });
-        } else {
-          reject(new Error('No download URL found'));
-        }
-      } else {
-        reject(new Error(`yt-dlp fallback failed: ${stderr}`));
-      }
-    });
-    
-    ytdlp.on('error', (error) => {
-      clearTimeout(timeout);
-      reject(new Error(`Failed to execute yt-dlp fallback: ${error.message}`));
-    });
-  });
-}
 
-function getAvailableFormats(videoUrl) {
-  return new Promise((resolve, reject) => {
-    const ytdlp = spawn('yt-dlp', [
-      '--list-formats',
-      '--no-playlist',
-      '--no-warnings',
-      '--socket-timeout', '30',
-      '--extractor-args', 'youtube:player_client=android',
-      videoUrl
-    ]);
-    
-    let stdout = '';
-    let stderr = '';
-    
-    ytdlp.stdout.on('data', (data) => {
-      stdout += data.toString();
-    });
-    
-    ytdlp.stderr.on('data', (data) => {
-      stderr += data.toString();
-    });
-    
-    ytdlp.on('close', (code) => {
-      if (code === 0) {
-        // Parse the format list and extract relevant info
-        const lines = stdout.split('\n');
-        const formats = [];
-        
-        for (const line of lines) {
-          if (line.includes('ID') && line.includes('EXT') && line.includes('RESOLUTION')) {
-            continue; // Skip header
-          }
-          
-          const match = line.match(/(\d+)\s+(\w+)\s+(\d+x\d+|\w+)\s+(\d+\.?\d*\w*)\s+(.+)/);
-          if (match) {
-            const [, id, ext, resolution, filesize, info] = match;
-            console.log(`Matched format: ID=${id}, EXT=${ext}, RESOLUTION=${resolution}, FILESIZE=${filesize}, INFO=${info}`);
-            if (parseInt(resolution) >= 720 || resolution.includes('1080') || resolution.includes('1440') || resolution.includes('2160')) {
-              formats.push({
-                id: id.trim(),
-                ext: ext.trim(),
-                resolution: resolution.trim(),
-                filesize: filesize.trim(),
-                info: info.trim()
-              });
-            }
-          } else {
-            console.log(`No match found for line: ${line}`);
-          }
-        }
-        
-        resolve(formats);
-      } else {
-        reject(new Error(`yt-dlp failed: ${stderr}`));
-      }
-    });
-    
-    ytdlp.on('error', (error) => {
-      reject(new Error(`Failed to execute yt-dlp: ${error.message}`));
-    });
-  });
-}
-
-function addToAria2c(downloadUrl, title, settings) {
+function addToMeTube(videoUrl, title, settings) {
   return new Promise(async (resolve, reject) => {
     try {
-      // Create a safe filename
-      const safeTitle = title.replace(/[^a-z0-9\s]/gi, '').replace(/\s+/g, '_').substring(0, 50);
-      const filename = `${safeTitle}.mp4`;
+      // Build MeTube API URL
+      const metubeUrl = `${settings.metube_url}/add`;
       
-      // Build aria2c RPC URL
-      const rpcUrl = `http://${settings.aria2c_ip}:${settings.aria2c_port}/jsonrpc`;
-      
-      // Prepare aria2c options
-      const options = {
-        dir: settings.download_folder,
-        out: filename,
-        'continue': 'true',
-        'max-connection-per-server': '4',
-        'split': '4'
+      // Prepare MeTube request payload
+      const metubeRequest = {
+        url: videoUrl,
+        quality: "best",
+        format: "any",
+        playlist_strict_mode: false,
+        auto_start: true
       };
       
-      // Add authentication if provided
-      if (settings.username && settings.password) {
-        options['http-user'] = settings.username;
-        options['http-passwd'] = settings.password;
-      }
-      
-      // Prepare RPC request
-      const rpcRequest = {
-        jsonrpc: '2.0',
-        method: 'aria2.addUri',
-        params: [
-          [downloadUrl],
-          options
-        ],
-        id: Date.now().toString()
-      };
-      
-      // Send request to aria2c
-      const response = await axios.post(rpcUrl, rpcRequest, {
+      // Send request to MeTube
+      const response = await axios.post(metubeUrl, metubeRequest, {
         headers: {
           'Content-Type': 'application/json'
         },
         timeout: 10000 // 10 seconds timeout
       });
       
-      if (response.data.error) {
-        reject(new Error(`aria2c error: ${response.data.error.message}`));
-      } else {
+      if (response.status === 200) {
         resolve({
-          gid: response.data.result,
-          filename: filename
+          success: true,
+          title: title
         });
+      } else {
+        reject(new Error(`MeTube error: ${response.status} ${response.statusText}`));
       }
       
     } catch (error) {
       if (error.code === 'ECONNREFUSED') {
-        reject(new Error('aria2c connection refused. Make sure aria2c is running and accessible.'));
+        reject(new Error('MeTube connection refused. Make sure MeTube is running and accessible.'));
       } else if (error.code === 'ETIMEDOUT') {
-        reject(new Error('aria2c connection timed out. Check your settings.'));
+        reject(new Error('MeTube connection timed out. Check your settings.'));
+      } else if (error.response) {
+        reject(new Error(`MeTube request failed: ${error.response.status} ${error.response.statusText}`));
       } else {
-        reject(new Error(`aria2c request failed: ${error.message}`));
+        reject(new Error(`MeTube request failed: ${error.message}`));
       }
     }
   });

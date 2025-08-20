@@ -1,13 +1,13 @@
 # Youtube Channel DVR
 
-A Node.js web application for managing YouTube channel downloads with Aria2c integration.
+A Node.js web application for managing YouTube channel downloads with MeTube integration.
 
 ## Features
 
 - **Dashboard**: Overview page (placeholder for future features)
 - **Channels**: Channel management (placeholder for future features)
 - **Videos**: Video management (placeholder for future features)
-- **Settings**: Aria2c configuration with SQLite persistence
+- **Settings**: MeTube configuration with SQLite persistence
 - **Mobile-first design**: Responsive layout that works on all devices
 - **SQLite database**: Local data storage for settings
 
@@ -18,21 +18,29 @@ A Node.js web application for managing YouTube channel downloads with Aria2c int
    ```bash
    npm install
    ```
-3. Install yt-dlp for video downloads:
+3. Install and configure MeTube for video downloads:
    ```bash
-   # On macOS (using Homebrew):
-   brew install yt-dlp
+   # Using Docker (recommended):
+   docker run -d \
+     --name metube \
+     -p 8081:8081 \
+     -v /path/to/downloads:/downloads \
+     alexta69/metube
    
-   # On Ubuntu/Debian:
-   sudo apt update
-   sudo apt install yt-dlp
-   
-   # On Windows (using pip):
-   pip install yt-dlp
+   # Or using Docker Compose:
+   # Create docker-compose.yml with:
+   # version: '3'
+   # services:
+   #   metube:
+   #     image: alexta69/metube
+   #     ports:
+   #       - "8081:8081"
+   #     volumes:
+   #       - ./downloads:/downloads
    ```
-4. Verify yt-dlp installation:
+4. Verify MeTube is running:
    ```bash
-   node check-ytdlp.js
+   node test-metube.js
    ```
 
 ## Usage
@@ -64,21 +72,18 @@ The application will be available at `http://localhost:3000`
 - Lists all videos from subscribed channels
 - Sorted by release date (newest first)
 - Paginated display with thumbnails and metadata
-- **Download functionality** using yt-dlp for best quality
+- **Download functionality** using MeTube for best quality
 
 ### Settings (`/settings`)
-- Configure Aria2c connection settings:
-  - **IP Address**: Aria2c server IP (default: localhost)
-  - **Port**: Aria2c server port (default: 6800)
-  - **Download Folder**: Path for downloads (default: /downloads)
-  - **Username**: Optional authentication username
-  - **Password**: Optional authentication password
+- Configure MeTube connection settings:
+  - **MeTube URL**: MeTube server URL (default: http://localhost:8081)
+  - **Download Folder**: Path for downloads (default: ./downloads)
 
 ## Database
 
 The application uses SQLite for data persistence:
 - Database file: `youtube_dvr.db`
-- Settings table stores Aria2c configuration
+- Settings table stores MeTube configuration
 - Data is automatically loaded and saved when editing settings
 
 ## Technology Stack
@@ -114,7 +119,7 @@ youtube-channel-watcher/
 - `DELETE /api/channels/:id` - Delete channel
 - `POST /api/channels/:id/check-videos` - Check for new videos from RSS feed
 - `GET /api/videos` - Get paginated videos list
-- `POST /api/videos/:id/download` - Get download URL using yt-dlp
+- `POST /api/videos/:id/download` - Send download request to MeTube
 
 ## Future Enhancements
 
