@@ -1,0 +1,30 @@
+{
+  "name": "youtube-channel-dvr",
+  "version": "1.0.0",
+  "description": "A web app to manage YouTube channel downloads with Aria2c integration",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js",
+    "dev": "nodemon server.js"
+  },
+  "dependencies": {
+    "axios": "^1.11.0",
+    "body-parser": "^1.20.2",
+    "child_process": "^1.0.2",
+    "express": "^4.18.2",
+    "path": "^0.12.7",
+    "sqlite3": "^5.1.6",
+    "xml2js": "^0.6.2"
+  },
+  "devDependencies": {
+    "nodemon": "^3.0.1"
+  },
+  "keywords": [
+    "youtube",
+    "dvr",
+    "aria2c",
+    "downloads"
+  ],
+  "author": "",
+  "license": "MIT"
+}
