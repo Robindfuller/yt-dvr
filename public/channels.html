@@ -1,0 +1,350 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Channels - Youtube Channel DVR</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <div class="container">
+        <header class="header">
+            <h1>Youtube Channel DVR</h1>
+        </header>
+        
+        <main class="main-content">
+            <div class="page-header">
+                <h2>Channels</h2>
+            </div>
+            
+            <div class="content-area">
+                <!-- Add Channel Form -->
+                <div class="form-section">
+                    <h3>Add New Channel</h3>
+                    <form id="addChannelForm" class="channel-form">
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label for="channel_id">Channel ID:</label>
+                                <input type="text" id="channel_id" name="channel_id" placeholder="UC..." required>
+                                <small>YouTube channel ID (e.g., UC1234567890)</small>
+                            </div>
+                            <div class="form-group">
+                                <label for="channel_name">Channel Name:</label>
+                                <input type="text" id="channel_name" name="channel_name" placeholder="Channel Name" required>
+                            </div>
+                        </div>
+                        <div class="form-actions">
+                            <button type="submit" class="btn btn-primary">Add Channel</button>
+                        </div>
+                    </form>
+                    <div id="formMessage" class="message"></div>
+                </div>
+
+                <!-- Bulk Import Section -->
+                <div class="form-section">
+                    <h3>Bulk Import Channels</h3>
+                    <form id="bulkImportForm" class="channel-form">
+                        <div class="form-group">
+                            <label for="bulk_channels">Channel List:</label>
+                            <textarea id="bulk_channels" name="bulk_channels" rows="8" placeholder="Paste channel data in format:&#10;UC-HFqs_7nzHwg1pD-_PrLcw,http://www.youtube.com/channel/UC-HFqs_7nzHwg1pD-_PrLcw,Kent Survival&#10;UC-Rx9HRmDoc5YmtcPOopmrA,http://www.youtube.com/channel/UC-Rx9HRmDoc5YmtcPOopmrA,Travel Beans" required></textarea>
+                            <small>Format: ChannelID,ChannelURL,ChannelName (one per line). Existing channels will be ignored.</small>
+                        </div>
+                        <div class="form-actions">
+                            <button type="submit" class="btn btn-success">Bulk Import</button>
+                        </div>
+                    </form>
+                    <div id="bulkImportMessage" class="message"></div>
+                </div>
+
+                <!-- Channels List -->
+                <div class="channels-section">
+                    <h3>Your Channels</h3>
+                    <div id="channelsList" class="channels-list">
+                        <div class="loading">Loading channels...</div>
+                    </div>
+                    
+                    <!-- Pagination -->
+                    <div id="pagination" class="pagination"></div>
+                </div>
+            </div>
+        </main>
+        
+        <nav class="bottom-nav">
+            <a href="/dashboard" class="nav-item">
+                <span class="nav-icon">📊</span>
+                <span class="nav-label">Dashboard</span>
+            </a>
+            <a href="/channels" class="nav-item active">
+                <span class="nav-icon">📺</span>
+                <span class="nav-label">Channels</span>
+            </a>
+            <a href="/videos" class="nav-item">
+                <span class="nav-icon">🎥</span>
+                <span class="nav-label">Videos</span>
+            </a>
+            <a href="/settings" class="nav-item">
+                <span class="nav-icon">⚙️</span>
+                <span class="nav-label">Settings</span>
+            </a>
+        </nav>
+    </div>
+
+    <script>
+        let currentPage = 1;
+        const channelsPerPage = 10;
+
+        // Load channels when page loads
+        document.addEventListener('DOMContentLoaded', function() {
+            loadChannels();
+        });
+
+        // Handle form submission
+        document.getElementById('addChannelForm').addEventListener('submit', function(e) {
+            e.preventDefault();
+            addChannel();
+        });
+
+        // Handle bulk import form submission
+        document.getElementById('bulkImportForm').addEventListener('submit', function(e) {
+            e.preventDefault();
+            bulkImportChannels();
+        });
+
+        function addChannel() {
+            const channelId = document.getElementById('channel_id').value.trim();
+            const channelName = document.getElementById('channel_name').value.trim();
+
+            if (!channelId || !channelName) {
+                showFormMessage('Please fill in all fields', 'error');
+                return;
+            }
+
+            fetch('/api/channels', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({
+                    channel_id: channelId,
+                    name: channelName
+                })
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    showFormMessage('Channel added successfully! Fetching videos...', 'success');
+                    document.getElementById('addChannelForm').reset();
+                    
+                    // Automatically fetch videos for the new channel
+                    fetchVideosForChannel(data.id, channelName);
+                    
+                    loadChannels(); // Reload the channels list
+                } else {
+                    showFormMessage(data.error || 'Error adding channel', 'error');
+                }
+            })
+            .catch(error => {
+                console.error('Error adding channel:', error);
+                showFormMessage('Error adding channel', 'error');
+            });
+        }
+
+        function fetchVideosForChannel(channelId, channelName) {
+            fetch(`/api/channels/${channelId}/check-videos`, {
+                method: 'POST'
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    showFormMessage(`Channel added! ${data.message}`, 'success');
+                } else {
+                    showFormMessage(`Channel added but failed to fetch videos: ${data.error}`, 'error');
+                }
+            })
+            .catch(error => {
+                console.error('Error fetching videos:', error);
+                showFormMessage('Channel added but failed to fetch videos', 'error');
+            });
+        }
+
+        function loadChannels(page = 1) {
+            currentPage = page;
+            const channelsList = document.getElementById('channelsList');
+            channelsList.innerHTML = '<div class="loading">Loading channels...</div>';
+
+            fetch(`/api/channels?page=${page}&limit=${channelsPerPage}`)
+                .then(response => response.json())
+                .then(data => {
+                    if (data.channels && data.channels.length > 0) {
+                        displayChannels(data.channels);
+                        displayPagination(data.pagination);
+                    } else {
+                        channelsList.innerHTML = '<div class="empty-state">No channels found. Add your first channel above!</div>';
+                        document.getElementById('pagination').innerHTML = '';
+                    }
+                })
+                .catch(error => {
+                    console.error('Error loading channels:', error);
+                    channelsList.innerHTML = '<div class="error">Error loading channels</div>';
+                });
+        }
+
+        function displayChannels(channels) {
+            const channelsList = document.getElementById('channelsList');
+            channelsList.innerHTML = '';
+
+            channels.forEach(channel => {
+                const channelElement = document.createElement('div');
+                channelElement.className = 'channel-item';
+                channelElement.innerHTML = `
+                    <div class="channel-info">
+                        <div class="channel-name">${channel.name}</div>
+                        <div class="channel-id">${channel.channel_id}</div>
+                        <div class="channel-date">Added: ${new Date(channel.created_at).toLocaleDateString()}</div>
+                    </div>
+                    <div class="channel-actions">
+                        <button class="btn btn-secondary btn-sm" onclick="checkVideos(${channel.id}, '${channel.name}')">Check Now</button>
+                        <button class="btn btn-danger btn-sm" onclick="deleteChannel(${channel.id})">Delete</button>
+                    </div>
+                `;
+                channelsList.appendChild(channelElement);
+            });
+        }
+
+        function checkVideos(channelId, channelName) {
+            const button = event.target;
+            const originalText = button.textContent;
+            button.textContent = 'Checking...';
+            button.disabled = true;
+
+            fetch(`/api/channels/${channelId}/check-videos`, {
+                method: 'POST'
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    showFormMessage(`${channelName}: ${data.message}`, 'success');
+                } else {
+                    showFormMessage(`${channelName}: ${data.error}`, 'error');
+                }
+            })
+            .catch(error => {
+                console.error('Error checking videos:', error);
+                showFormMessage(`${channelName}: Error checking for new videos`, 'error');
+            })
+            .finally(() => {
+                button.textContent = originalText;
+                button.disabled = false;
+            });
+        }
+
+        function displayPagination(pagination) {
+            const paginationDiv = document.getElementById('pagination');
+            
+            if (pagination.totalPages <= 1) {
+                paginationDiv.innerHTML = '';
+                return;
+            }
+
+            let paginationHTML = '<div class="pagination-controls">';
+            
+            if (pagination.hasPrev) {
+                paginationHTML += `<button class="btn btn-secondary" onclick="loadChannels(${pagination.page - 1})">Previous</button>`;
+            }
+            
+            paginationHTML += `<span class="page-info">Page ${pagination.page} of ${pagination.totalPages}</span>`;
+            
+            if (pagination.hasNext) {
+                paginationHTML += `<button class="btn btn-secondary" onclick="loadChannels(${pagination.page + 1})">Next</button>`;
+            }
+            
+            paginationHTML += '</div>';
+            paginationDiv.innerHTML = paginationHTML;
+        }
+
+        function deleteChannel(channelId) {
+            if (!confirm('Are you sure you want to delete this channel?')) {
+                return;
+            }
+
+            fetch(`/api/channels/${channelId}`, {
+                method: 'DELETE'
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    loadChannels(currentPage); // Reload current page
+                } else {
+                    alert('Error deleting channel: ' + (data.error || 'Unknown error'));
+                }
+            })
+            .catch(error => {
+                console.error('Error deleting channel:', error);
+                alert('Error deleting channel');
+            });
+        }
+
+        function showFormMessage(text, type) {
+            const messageDiv = document.getElementById('formMessage');
+            messageDiv.textContent = text;
+            messageDiv.className = `message ${type}`;
+            
+            setTimeout(() => {
+                messageDiv.textContent = '';
+                messageDiv.className = 'message';
+            }, 3000);
+        }
+
+        function bulkImportChannels() {
+            const bulkChannelsText = document.getElementById('bulk_channels').value.trim();
+            
+            if (!bulkChannelsText) {
+                showBulkImportMessage('Please enter channel data', 'error');
+                return;
+            }
+
+            const button = event.target;
+            const originalText = button.textContent;
+            button.textContent = 'Importing...';
+            button.disabled = true;
+
+            fetch('/api/channels/bulk-import', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({ channels: bulkChannelsText })
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    showBulkImportMessage(`Bulk import completed! ${data.added} channels added, ${data.skipped} already existed.`, 'success');
+                    document.getElementById('bulk_channels').value = '';
+                    loadChannels(currentPage); // Reload channels list
+                } else {
+                    showBulkImportMessage(`Bulk import failed: ${data.error}`, 'error');
+                }
+            })
+            .catch(error => {
+                console.error('Error bulk importing channels:', error);
+                showBulkImportMessage('Error bulk importing channels: ' + error.message, 'error');
+            })
+            .finally(() => {
+                button.textContent = originalText;
+                button.disabled = false;
+            });
+        }
+
+        function showBulkImportMessage(text, type) {
+            const messageDiv = document.getElementById('bulkImportMessage');
+            messageDiv.textContent = text;
+            messageDiv.className = `message ${type}`;
+            
+            setTimeout(() => {
+                messageDiv.textContent = '';
+                messageDiv.className = 'message';
+            }, 5000);
+        }
+    </script>
+</body>
+</html>

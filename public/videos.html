@@ -1,0 +1,431 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Videos - Youtube Channel DVR</title>
+    <link rel="stylesheet" href="styles.css">
+    <style>
+        .download-status-badge {
+            display: inline-block;
+            padding: 4px 8px;
+            border-radius: 12px;
+            font-size: 12px;
+            font-weight: bold;
+            text-transform: uppercase;
+            margin-bottom: 10px;
+        }
+        
+        .status-pending {
+            background: #fff3cd;
+            color: #856404;
+        }
+        
+        .status-downloading {
+            background: #d1ecf1;
+            color: #0c5460;
+        }
+        
+        .status-completed {
+            background: #d4edda;
+            color: #155724;
+        }
+        
+        .status-failed {
+            background: #f8d7da;
+            color: #721c24;
+        }
+        
+        .btn-warning {
+            background-color: #ffc107;
+            color: #212529;
+        }
+        
+        .btn-warning:hover {
+            background-color: #e0a800;
+        }
+        
+        .btn-warning:disabled {
+            background-color: #ffc107;
+            opacity: 0.6;
+        }
+        
+        .btn-info {
+            background-color: #17a2b8;
+            color: white;
+        }
+        
+        .btn-info:hover {
+            background-color: #138496;
+        }
+        
+        .btn-info:disabled {
+            background-color: #17a2b8;
+            opacity: 0.6;
+        }
+        
+        .download-requested {
+            font-size: 0.85rem;
+            color: #6c757d;
+            margin-top: 5px;
+            font-style: italic;
+        }
+        
+        .thumbnail-placeholder {
+            width: 100%;
+            height: 100%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: #f8f9fa;
+            border-radius: 6px;
+            color: #6c757d;
+            font-size: 2rem;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header class="header">
+            <h1>Youtube Channel DVR</h1>
+        </header>
+        
+        <main class="main-content">
+            <div class="page-header">
+                <h2>Videos</h2>
+            </div>
+            
+            <div class="content-area">
+                <div class="videos-header">
+                    <h3>Latest Videos</h3>
+                    <p>Videos from your subscribed channels, sorted by release date</p>
+                </div>
+                
+                <!-- Command Display Modal -->
+                <div id="commandModal" class="modal" style="display: none;">
+                    <div class="modal-content">
+                        <div class="modal-header">
+                            <h4>yt-dlp Download Command</h4>
+                            <span class="close" onclick="closeCommandModal()">&times;</span>
+                        </div>
+                        <div class="modal-body">
+                            <p>Copy and paste this command in your terminal to download the video:</p>
+                            <div class="command-container">
+                                <code id="ytdlpCommand" class="command-text"></code>
+                                <button class="btn btn-primary btn-sm" onclick="copyCommand()">Copy Command</button>
+                            </div>
+                            <div class="command-info">
+                                <p><strong>Download folder:</strong> <span id="downloadFolder"></span></p>
+                                <p><strong>Format:</strong> Best MP4 quality (1080p/720p/480p)</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <div id="videosList" class="videos-list">
+                    <div class="loading">Loading videos...</div>
+                </div>
+                
+                <!-- Pagination -->
+                <div id="pagination" class="pagination"></div>
+            </div>
+        </main>
+        
+        <nav class="bottom-nav">
+            <a href="/dashboard" class="nav-item">
+                <span class="nav-icon">📊</span>
+                <span class="nav-label">Dashboard</span>
+            </a>
+            <a href="/channels" class="nav-item">
+                <span class="nav-icon">📺</span>
+                <span class="nav-label">Channels</span>
+            </a>
+            <a href="/videos" class="nav-item active">
+                <span class="nav-icon">🎥</span>
+                <span class="nav-label">Videos</span>
+            </a>
+            <a href="/settings" class="nav-item">
+                <span class="nav-icon">⚙️</span>
+                <span class="nav-label">Settings</span>
+            </a>
+        </nav>
+    </div>
+
+    <script>
+        let currentPage = 1;
+        const videosPerPage = 10;
+
+        // Load videos when page loads
+        document.addEventListener('DOMContentLoaded', function() {
+            loadVideos();
+        });
+
+        function loadVideos(page = 1) {
+            currentPage = page;
+            const videosList = document.getElementById('videosList');
+            videosList.innerHTML = '<div class="loading">Loading videos...</div>';
+
+            fetch(`/api/videos?page=${page}&limit=${videosPerPage}`)
+                .then(response => response.json())
+                .then(data => {
+                    if (data.videos && data.videos.length > 0) {
+                        displayVideos(data.videos);
+                        displayPagination(data.pagination);
+                    } else {
+                        videosList.innerHTML = '<div class="empty-state">No videos found. Add some channels and check for videos!</div>';
+                        document.getElementById('pagination').innerHTML = '';
+                    }
+                })
+                .catch(error => {
+                    console.error('Error loading videos:', error);
+                    videosList.innerHTML = '<div class="error">Error loading videos</div>';
+                });
+        }
+
+        function displayVideos(videos) {
+            const videosList = document.getElementById('videosList');
+            videosList.innerHTML = '';
+
+            videos.forEach(video => {
+                const videoElement = document.createElement('div');
+                videoElement.className = 'video-item';
+                
+                const publishedDate = new Date(video.published_at).toLocaleDateString();
+                const description = video.description ? video.description.substring(0, 150) + '...' : '';
+                
+                // Get download status and button
+                const downloadStatus = getDownloadStatus(video);
+                const downloadButton = getDownloadButton(video);
+                
+                // Format download requested date if available
+                let downloadRequestedInfo = '';
+                if (video.download_requested_at) {
+                    const downloadRequestedDate = new Date(video.download_requested_at).toLocaleString();
+                    downloadRequestedInfo = `<div class="download-requested">Download requested: ${downloadRequestedDate}</div>`;
+                }
+                
+                videoElement.innerHTML = `
+                    <div class="video-thumbnail">
+                        ${video.thumbnail_url ? `<img src="${video.thumbnail_url}" alt="${video.title}" onerror="this.style.display='none'; this.nextElementSibling.style.display='flex'">` : ''}
+                        <div class="thumbnail-placeholder" style="display: ${video.thumbnail_url ? 'none' : 'flex'}">
+                            <span>🎥</span>
+                        </div>
+                    </div>
+                    <div class="video-info">
+                        <div class="video-title">${video.title}</div>
+                        <div class="video-channel">${video.channel_name}</div>
+                        <div class="video-date">Published: ${publishedDate}</div>
+                        <div class="video-description">${description}</div>
+                        <div class="download-status">${downloadStatus}</div>
+                        ${downloadRequestedInfo}
+                        <div class="video-actions">
+                            <a href="${video.video_url}" target="_blank" class="btn btn-primary btn-sm">Watch on YouTube</a>
+                            ${downloadButton}
+                        </div>
+                    </div>
+                `;
+                videosList.appendChild(videoElement);
+            });
+        }
+
+        function getDownloadStatus(video) {
+            if (!video.download_status || video.download_status === 'not_queued') {
+                return '';
+            }
+            
+            let statusClass = '';
+            let statusText = '';
+            
+            switch (video.download_status) {
+                case 'pending':
+                    statusClass = 'status-pending';
+                    statusText = 'Queued for download';
+                    break;
+                case 'downloading':
+                    statusClass = 'status-downloading';
+                    statusText = `Downloading (${Math.round(video.download_progress || 0)}%)`;
+                    break;
+                case 'completed':
+                    statusClass = 'status-completed';
+                    statusText = 'Downloaded';
+                    break;
+                case 'failed':
+                    statusClass = 'status-failed';
+                    statusText = 'Failed';
+                    break;
+                default:
+                    return '';
+            }
+            
+            return `<div class="download-status-badge ${statusClass}">${statusText}</div>`;
+        }
+
+        function getDownloadButton(video) {
+            if (video.download_status === 'downloading') {
+                return `<button class="btn btn-warning btn-sm" disabled>Downloading...</button>`;
+            } else if (video.download_status === 'completed') {
+                return `<button class="btn btn-success btn-sm" disabled>Downloaded</button>`;
+            } else if (video.download_status === 'failed') {
+                return `<button class="btn btn-danger btn-sm" onclick="retryDownload(${video.id})">Retry</button>`;
+            } else if (video.download_status === 'pending') {
+                return `<button class="btn btn-info btn-sm" disabled>Queued</button>`;
+            } else {
+                return `<button class="btn btn-primary btn-sm" onclick="startDownload(${video.id})">Download</button>`;
+            }
+        }
+
+        function displayPagination(pagination) {
+            const paginationDiv = document.getElementById('pagination');
+            
+            if (pagination.totalPages <= 1) {
+                paginationDiv.innerHTML = '';
+                return;
+            }
+
+            let paginationHTML = '<div class="pagination-controls">';
+            
+            if (pagination.hasPrev) {
+                paginationHTML += `<button class="btn btn-secondary" onclick="loadVideos(${pagination.page - 1})">Previous</button>`;
+            }
+            
+            paginationHTML += `<span class="page-info">Page ${pagination.page} of ${pagination.totalPages}</span>`;
+            
+            if (pagination.hasNext) {
+                paginationHTML += `<button class="btn btn-secondary" onclick="loadVideos(${pagination.page + 1})">Next</button>`;
+            }
+            
+            paginationHTML += '</div>';
+            paginationDiv.innerHTML = paginationHTML;
+        }
+
+        function startDownload(videoId) {
+            const button = event.target;
+            const originalText = button.textContent;
+            button.textContent = 'Queuing...';
+            button.disabled = true;
+
+            fetch(`/api/videos/${videoId}/download`, {
+                method: 'POST'
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    const message = data.filenamePrefix ? 
+                        `Download queued successfully! Filename: ${data.filenamePrefix}` : 
+                        'Download queued successfully!';
+                    showMessage(message, 'success');
+                    // Reload videos to update status
+                    setTimeout(() => loadVideos(currentPage), 1000);
+                } else {
+                    showMessage(`Failed to queue download: ${data.error}`, 'error');
+                }
+            })
+            .catch(error => {
+                console.error('Error queuing download:', error);
+                showMessage('Failed to queue download: ' + error.message, 'error');
+            })
+            .finally(() => {
+                button.textContent = originalText;
+                button.disabled = false;
+            });
+        }
+
+        function retryDownload(videoId) {
+            const button = event.target;
+            const originalText = button.textContent;
+            button.textContent = 'Retrying...';
+            button.disabled = true;
+
+            fetch(`/api/downloads/retry/${videoId}`, {
+                method: 'POST'
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    showMessage('Download retry queued successfully!', 'success');
+                    // Reload videos to update status
+                    setTimeout(() => loadVideos(currentPage), 1000);
+                } else {
+                    showMessage(`Failed to retry download: ${data.error}`, 'error');
+                }
+            })
+            .catch(error => {
+                console.error('Error retrying download:', error);
+                showMessage('Failed to retry download: ' + error.message, 'error');
+            })
+            .finally(() => {
+                button.textContent = originalText;
+                button.disabled = false;
+            });
+        }
+
+        // Modal functions
+        function showCommandModal(command, downloadFolder, videoTitle) {
+            document.getElementById('ytdlpCommand').textContent = command;
+            document.getElementById('downloadFolder').textContent = downloadFolder;
+            document.getElementById('commandModal').style.display = 'block';
+        }
+
+        function closeCommandModal() {
+            document.getElementById('commandModal').style.display = 'none';
+        }
+
+        function copyCommand() {
+            const commandText = document.getElementById('ytdlpCommand').textContent;
+            navigator.clipboard.writeText(commandText).then(() => {
+                showMessage('Command copied to clipboard!', 'success');
+            }).catch(() => {
+                // Fallback for older browsers
+                const textArea = document.createElement('textarea');
+                textArea.value = commandText;
+                document.body.appendChild(textArea);
+                textArea.select();
+                document.execCommand('copy');
+                document.body.removeChild(textArea);
+                showMessage('Command copied to clipboard!', 'success');
+            });
+        }
+
+        // Close modal when clicking outside of it
+        window.onclick = function(event) {
+            const modal = document.getElementById('commandModal');
+            if (event.target === modal) {
+                closeCommandModal();
+            }
+        }
+
+
+
+        function showMessage(text, type) {
+            // Create a temporary message element
+            const messageDiv = document.createElement('div');
+            messageDiv.className = `message ${type}`;
+            messageDiv.textContent = text;
+            messageDiv.style.position = 'fixed';
+            messageDiv.style.top = '20px';
+            messageDiv.style.right = '20px';
+            messageDiv.style.zIndex = '1000';
+            messageDiv.style.padding = '1rem';
+            messageDiv.style.borderRadius = '8px';
+            
+            if (type === 'success') {
+                messageDiv.style.color = '#155724';
+                messageDiv.style.backgroundColor = '#d4edda';
+                messageDiv.style.border = '1px solid #c3e6cb';
+            } else if (type === 'error') {
+                messageDiv.style.color = '#721c24';
+                messageDiv.style.backgroundColor = '#f8d7da';
+                messageDiv.style.border = '1px solid #f5c6cb';
+            }
+            
+            document.body.appendChild(messageDiv);
+            
+            setTimeout(() => {
+                if (messageDiv.parentNode) {
+                    messageDiv.parentNode.removeChild(messageDiv);
+                }
+            }, 3000);
+        }
+    </script>
+</body>
+</html>

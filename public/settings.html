@@ -1,0 +1,137 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Settings - Youtube Channel DVR</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <div class="container">
+        <header class="header">
+            <h1>Youtube Channel DVR</h1>
+        </header>
+        
+        <main class="main-content">
+            <div class="page-header">
+                <h2>Settings</h2>
+            </div>
+            
+            <div class="content-area">
+                <form id="settingsForm" class="settings-form">
+                    <div class="form-group">
+                        <label for="metube_url">MeTube URL:</label>
+                        <input type="url" id="metube_url" name="metube_url" placeholder="http://localhost:8081" required>
+                        <small class="form-help">URL where MeTube is running (e.g., http://localhost:8081)</small>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="download_folder">Download Folder:</label>
+                        <input type="text" id="download_folder" name="download_folder" placeholder="./downloads" required>
+                        <small class="form-help">Path where downloaded videos will be saved. Use relative path (e.g., ./downloads) or absolute path.</small>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="filter_shorts">
+                            <input type="checkbox" id="filter_shorts" name="filter_shorts">
+                            Filter out YouTube Shorts
+                        </label>
+                        <small class="form-help">When enabled, YouTube Shorts videos will be automatically excluded when checking for new videos.</small>
+                    </div>
+                    
+                    <div class="form-actions">
+                        <button type="submit" class="btn btn-primary">Save Settings</button>
+                    </div>
+                </form>
+                
+                <div id="message" class="message"></div>
+            </div>
+        </main>
+        
+        <nav class="bottom-nav">
+            <a href="/dashboard" class="nav-item">
+                <span class="nav-icon">📊</span>
+                <span class="nav-label">Dashboard</span>
+            </a>
+            <a href="/channels" class="nav-item">
+                <span class="nav-icon">📺</span>
+                <span class="nav-label">Channels</span>
+            </a>
+            <a href="/videos" class="nav-item">
+                <span class="nav-icon">🎥</span>
+                <span class="nav-label">Videos</span>
+            </a>
+            <a href="/settings" class="nav-item active">
+                <span class="nav-icon">⚙️</span>
+                <span class="nav-label">Settings</span>
+            </a>
+        </nav>
+    </div>
+
+    <script>
+        // Load settings when page loads
+        document.addEventListener('DOMContentLoaded', function() {
+            loadSettings();
+        });
+
+        // Handle form submission
+        document.getElementById('settingsForm').addEventListener('submit', function(e) {
+            e.preventDefault();
+            saveSettings();
+        });
+
+        function loadSettings() {
+            fetch('/api/settings')
+                .then(response => response.json())
+                .then(data => {
+                    document.getElementById('metube_url').value = data.metube_url || 'http://localhost:8081';
+                    document.getElementById('download_folder').value = data.download_folder || './downloads';
+                    document.getElementById('filter_shorts').checked = data.filter_shorts !== 0;
+                })
+                .catch(error => {
+                    console.error('Error loading settings:', error);
+                    showMessage('Error loading settings', 'error');
+                });
+        }
+
+        function saveSettings() {
+            const formData = {
+                metube_url: document.getElementById('metube_url').value,
+                download_folder: document.getElementById('download_folder').value,
+                filter_shorts: document.getElementById('filter_shorts').checked
+            };
+
+            fetch('/api/settings', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify(formData)
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    showMessage('Settings saved successfully!', 'success');
+                } else {
+                    showMessage('Error saving settings', 'error');
+                }
+            })
+            .catch(error => {
+                console.error('Error saving settings:', error);
+                showMessage('Error saving settings', 'error');
+            });
+        }
+
+        function showMessage(text, type) {
+            const messageDiv = document.getElementById('message');
+            messageDiv.textContent = text;
+            messageDiv.className = `message ${type}`;
+            
+            setTimeout(() => {
+                messageDiv.textContent = '';
+                messageDiv.className = 'message';
+            }, 3000);
+        }
+    </script>
+</body>
+</html>

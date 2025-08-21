@@ -1,0 +1,284 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dashboard - Youtube Channel DVR</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <div class="container">
+        <header class="header">
+            <h1>Youtube Channel DVR</h1>
+        </header>
+        
+        <main class="main-content">
+            <div class="page-header">
+                <h2>Dashboard</h2>
+            </div>
+            
+            <div class="content-area">
+                <div class="dashboard-section">
+                    <h3>Auto-Check for New Videos</h3>
+                    <p>Check all channels for new videos and automatically add them to MeTube for download.</p>
+                    
+                    <div class="auto-check-controls">
+                        <button id="autoCheckBtn" class="btn btn-primary" onclick="startAutoCheck()">
+                            🔄 Start Manual Check
+                        </button>
+                        <div id="autoCheckStatus" class="status-message"></div>
+                    </div>
+                    
+                    <div id="autoCheckResults" class="results-section" style="display: none;">
+                        <h4>Auto-Check Results</h4>
+                        <div id="resultsContent"></div>
+                    </div>
+                </div>
+
+                <div class="dashboard-section">
+                    <h3>Automatic Scheduler</h3>
+                    <p>The system automatically checks for new videos every 30 minutes and adds them to MeTube.</p>
+                    
+                    <div class="scheduler-controls">
+                        <div class="scheduler-status">
+                            <span id="schedulerStatus" class="status-indicator">Loading...</span>
+                        </div>
+                        <div class="scheduler-buttons">
+                            <button id="startSchedulerBtn" class="btn btn-success" onclick="controlScheduler('start')" style="display: none;">
+                                ▶️ Start Scheduler
+                            </button>
+                            <button id="stopSchedulerBtn" class="btn btn-danger" onclick="controlScheduler('stop')" style="display: none;">
+                                ⏹️ Stop Scheduler
+                            </button>
+                        </div>
+                        <div id="schedulerMessage" class="status-message"></div>
+                    </div>
+                </div>
+                
+                <div class="dashboard-section">
+                    <h3>Quick Stats</h3>
+                    <div id="quickStats" class="stats-grid">
+                        <div class="stat-card">
+                            <div class="stat-number" id="totalChannels">-</div>
+                            <div class="stat-label">Total Channels</div>
+                        </div>
+                        <div class="stat-card">
+                            <div class="stat-number" id="totalVideos">-</div>
+                            <div class="stat-label">Total Videos</div>
+                        </div>
+                        <div class="stat-card">
+                            <div class="stat-number" id="pendingDownloads">-</div>
+                            <div class="stat-label">Pending Downloads</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </main>
+        
+        <nav class="bottom-nav">
+            <a href="/dashboard" class="nav-item active">
+                <span class="nav-icon">📊</span>
+                <span class="nav-label">Dashboard</span>
+            </a>
+            <a href="/channels" class="nav-item">
+                <span class="nav-icon">📺</span>
+                <span class="nav-label">Channels</span>
+            </a>
+            <a href="/videos" class="nav-item">
+                <span class="nav-icon">🎥</span>
+                <span class="nav-label">Videos</span>
+            </a>
+            <a href="/settings" class="nav-item">
+                <span class="nav-icon">⚙️</span>
+                <span class="nav-label">Settings</span>
+            </a>
+        </nav>
+    </div>
+
+    <script>
+        // Load dashboard data when page loads
+        document.addEventListener('DOMContentLoaded', function() {
+            loadQuickStats();
+            loadSchedulerStatus();
+        });
+
+        function loadQuickStats() {
+            // Load channel count
+            fetch('/api/channels?limit=1')
+                .then(response => response.json())
+                .then(data => {
+                    document.getElementById('totalChannels').textContent = data.pagination.total;
+                })
+                .catch(error => {
+                    console.error('Error loading channel count:', error);
+                });
+
+            // Load video count
+            fetch('/api/videos?limit=1')
+                .then(response => response.json())
+                .then(data => {
+                    document.getElementById('totalVideos').textContent = data.pagination.total;
+                })
+                .catch(error => {
+                    console.error('Error loading video count:', error);
+                });
+
+            // Load pending downloads count (videos without download_requested_at)
+            fetch('/api/videos?limit=1000')
+                .then(response => response.json())
+                .then(data => {
+                    const pendingCount = data.videos.filter(video => !video.download_requested_at).length;
+                    document.getElementById('pendingDownloads').textContent = pendingCount;
+                })
+                .catch(error => {
+                    console.error('Error loading pending downloads count:', error);
+                });
+        }
+
+        function startAutoCheck() {
+            const button = document.getElementById('autoCheckBtn');
+            const statusDiv = document.getElementById('autoCheckStatus');
+            const resultsDiv = document.getElementById('autoCheckResults');
+            
+            // Update UI
+            button.disabled = true;
+            button.textContent = '🔄 Checking...';
+            statusDiv.textContent = 'Checking all channels for new videos...';
+            statusDiv.className = 'status-message info';
+            resultsDiv.style.display = 'none';
+            
+            // Start auto-check
+            fetch('/api/auto-check', {
+                method: 'POST'
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    displayAutoCheckResults(data.results);
+                    statusDiv.textContent = '✅ Auto-check completed successfully!';
+                    statusDiv.className = 'status-message success';
+                } else {
+                    statusDiv.textContent = `❌ Auto-check failed: ${data.error}`;
+                    statusDiv.className = 'status-message error';
+                }
+            })
+            .catch(error => {
+                console.error('Error during auto-check:', error);
+                statusDiv.textContent = '❌ Auto-check failed: ' + error.message;
+                statusDiv.className = 'status-message error';
+            })
+            .finally(() => {
+                button.disabled = false;
+                button.textContent = '🔄 Start Auto-Check';
+                // Reload stats after auto-check
+                setTimeout(loadQuickStats, 1000);
+            });
+        }
+
+        function displayAutoCheckResults(results) {
+            const resultsDiv = document.getElementById('autoCheckResults');
+            const contentDiv = document.getElementById('resultsContent');
+            
+            let html = `
+                <div class="results-grid">
+                    <div class="result-item">
+                        <div class="result-number">${results.channelsChecked}</div>
+                        <div class="result-label">Channels Checked</div>
+                    </div>
+                    <div class="result-item">
+                        <div class="result-number">${results.totalVideosFound}</div>
+                        <div class="result-label">Total Videos Found</div>
+                    </div>
+                    <div class="result-item">
+                        <div class="result-number">${results.newVideosAdded}</div>
+                        <div class="result-label">New Videos Added</div>
+                    </div>
+                    <div class="result-item">
+                        <div class="result-number">${results.videosAddedToMeTube}</div>
+                        <div class="result-label">Added to MeTube</div>
+                    </div>
+                </div>
+            `;
+            
+            if (results.errors && results.errors.length > 0) {
+                html += '<div class="errors-section"><h5>Errors:</h5><ul>';
+                results.errors.forEach(error => {
+                    html += `<li>${error.channel}: ${error.error}</li>`;
+                });
+                html += '</ul></div>';
+            }
+            
+            contentDiv.innerHTML = html;
+            resultsDiv.style.display = 'block';
+        }
+
+        function loadSchedulerStatus() {
+            fetch('/api/auto-check/scheduler', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({ action: 'status' })
+            })
+            .then(response => response.json())
+            .then(data => {
+                updateSchedulerUI(data);
+            })
+            .catch(error => {
+                console.error('Error loading scheduler status:', error);
+                updateSchedulerUI({ running: false, isChecking: false });
+            });
+        }
+
+        function controlScheduler(action) {
+            const messageDiv = document.getElementById('schedulerMessage');
+            
+            fetch('/api/auto-check/scheduler', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({ action: action })
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    messageDiv.textContent = data.message;
+                    messageDiv.className = 'status-message success';
+                    loadSchedulerStatus(); // Refresh status
+                } else {
+                    messageDiv.textContent = 'Error: ' + data.error;
+                    messageDiv.className = 'status-message error';
+                }
+            })
+            .catch(error => {
+                console.error('Error controlling scheduler:', error);
+                messageDiv.textContent = 'Error controlling scheduler: ' + error.message;
+                messageDiv.className = 'status-message error';
+            });
+        }
+
+        function updateSchedulerUI(status) {
+            const statusSpan = document.getElementById('schedulerStatus');
+            const startBtn = document.getElementById('startSchedulerBtn');
+            const stopBtn = document.getElementById('stopSchedulerBtn');
+            
+            if (status.running) {
+                statusSpan.textContent = '🟢 Running';
+                statusSpan.className = 'status-indicator running';
+                startBtn.style.display = 'none';
+                stopBtn.style.display = 'inline-block';
+                
+                if (status.isChecking) {
+                    statusSpan.textContent = '🟡 Checking for new videos...';
+                }
+            } else {
+                statusSpan.textContent = '🔴 Stopped';
+                statusSpan.className = 'status-indicator stopped';
+                startBtn.style.display = 'inline-block';
+                stopBtn.style.display = 'none';
+            }
+        }
+    </script>
+</body>
+</html>
