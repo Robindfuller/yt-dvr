@@ -452,46 +452,31 @@ function saveVideosToDatabase(videos, channelId) {
     let skippedCount = 0;
     const newlyAddedVideos = [];
     
-    // First, get the channel's creation date
-    db.get("SELECT created_at FROM channels WHERE id = ?", [channelId], (err, channel) => {
-      if (err) {
-        console.error('Error getting channel creation date:', err);
-        resolve({ saved: 0, skipped: videos.length, newlyAddedVideos: [] });
-        return;
-      }
-      
-      const channelCreatedAt = new Date(channel.created_at);
-      
-      videos.forEach((video, index) => {
-        const videoPublishedAt = new Date(video.published_at);
-        
-        // Save ALL videos to database, but only mark recent ones for auto-queue
-        db.run(`INSERT OR IGNORE INTO videos (video_id, channel_id, title, description, published_at, thumbnail_url, video_url) 
-                VALUES (?, ?, ?, ?, ?, ?, ?)`,
-          [video.video_id, channelId, video.title, video.description, video.published_at, video.thumbnail_url, video.video_url],
-          function(err) {
-            if (err) {
-              console.error('Error saving video:', err);
-            } else if (this.changes > 0) {
-              savedCount++;
-              // Only add to auto-queue if published AFTER channel was added
-              if (videoPublishedAt > channelCreatedAt) {
-                newlyAddedVideos.push(video);
-              }
-            } else {
-              skippedCount++;
-            }
-            
-            if (index === videos.length - 1) {
-              resolve({ 
-                saved: savedCount, 
-                skipped: skippedCount, 
-                newlyAddedVideos: newlyAddedVideos 
-              });
-            }
+    videos.forEach((video, index) => {
+      // Save ALL videos to database
+      db.run(`INSERT OR IGNORE INTO videos (video_id, channel_id, title, description, published_at, thumbnail_url, video_url) 
+              VALUES (?, ?, ?, ?, ?, ?, ?)`,
+        [video.video_id, channelId, video.title, video.description, video.published_at, video.thumbnail_url, video.video_url],
+        function(err) {
+          if (err) {
+            console.error('Error saving video:', err);
+          } else if (this.changes > 0) {
+            savedCount++;
+            // Add all newly saved videos to the auto-queue list
+            newlyAddedVideos.push(video);
+          } else {
+            skippedCount++;
           }
-        );
-      });
+          
+          if (index === videos.length - 1) {
+            resolve({ 
+              saved: savedCount, 
+              skipped: skippedCount, 
+              newlyAddedVideos: newlyAddedVideos 
+            });
+          }
+        }
+      );
     });
   });
 }
@@ -770,30 +755,32 @@ app.post('/api/auto-check', (req, res) => {
       db.get("SELECT filter_shorts FROM settings ORDER BY id DESC LIMIT 1", (err, settings) => {
         const filterShorts = settings ? settings.filter_shorts !== 0 : true;
         
-                  // Fetch and parse RSS feed
-          fetchYouTubeRSS(channel.channel_id)
-            .then(xmlData => parseRSSFeed(xmlData, filterShorts))
-            .then(videos => {
-              totalVideosFound += videos.length;
-              
-              // Save videos to database and get new ones
-              return saveVideosToDatabase(videos, channel.id);
-            })
-            .then(result => {
-              newVideosAdded += result.saved;
-              channelsChecked++;
-              
-              // If new videos were found, add them to MeTube
-              if (result.saved > 0) {
-                console.log(`🎥 Found ${result.saved} new videos for ${channel.name}, adding to MeTube...`);
-                return addNewVideosToMeTube(channel.id, result.newlyAddedVideos);
-              }
-              return 0;
-            })
+        // Fetch and parse RSS feed
+        fetchYouTubeRSS(channel.channel_id)
+          .then(xmlData => parseRSSFeed(xmlData, filterShorts))
+          .then(videos => {
+            totalVideosFound += videos.length;
+            
+            // Save videos to database and get new ones
+            return saveVideosToDatabase(videos, channel.id);
+          })
+          .then(result => {
+            newVideosAdded += result.saved;
+            channelsChecked++;
+            
+            // If new videos were found, add them to MeTube
+            if (result.saved > 0) {
+              console.log(`🎥 Found ${result.saved} new videos for ${channel.name}, adding to MeTube...`);
+              return addNewVideosToMeTube(channel.id, result.newlyAddedVideos);
+            }
+            return 0;
+          })
           .then(metubeCount => {
             videosAddedToMeTube += metubeCount;
-            // Process next channel
-            processChannel(index + 1);
+            // Add delay before processing next channel to avoid rate limiting
+            setTimeout(() => {
+              processChannel(index + 1);
+            }, 2000); // 2 second delay between channels
           })
           .catch(error => {
             console.error(`❌ Error processing channel ${channel.name}:`, error.message);
@@ -802,8 +789,10 @@ app.post('/api/auto-check', (req, res) => {
               error: error.message
             });
             channelsChecked++;
-            // Continue with next channel
-            processChannel(index + 1);
+            // Add delay even on error before continuing with next channel
+            setTimeout(() => {
+              processChannel(index + 1);
+            }, 2000); // 2 second delay between channels
           });
       });
     };
@@ -955,7 +944,7 @@ async function runScheduledAutoCheck() {
     
     const filterShorts = settings ? settings.filter_shorts !== 0 : true;
     
-    // Process each channel
+    // Process each channel with delay
     for (const channel of channels) {
       try {
         console.log(`📺 Scheduled check: ${channel.name}`);
@@ -974,10 +963,22 @@ async function runScheduledAutoCheck() {
           videosAddedToMeTube += metubeCount;
         }
         
+        // Add delay between channels to avoid rate limiting
+        if (channels.indexOf(channel) < channels.length - 1) {
+          console.log(`  ⏳ Waiting 2 seconds before next channel...`);
+          await new Promise(resolve => setTimeout(resolve, 2000));
+        }
+        
       } catch (error) {
         console.error(`  ❌ Error processing ${channel.name}: ${error.message}`);
         errors.push({ channel: channel.name, error: error.message });
         channelsChecked++;
+        
+        // Add delay even on error before continuing
+        if (channels.indexOf(channel) < channels.length - 1) {
+          console.log(`  ⏳ Waiting 2 seconds before next channel...`);
+          await new Promise(resolve => setTimeout(resolve, 2000));
+        }
       }
     }
     
