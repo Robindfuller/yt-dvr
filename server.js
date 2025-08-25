@@ -36,6 +36,7 @@ function initDatabase() {
     password TEXT DEFAULT '',
     metube_url TEXT DEFAULT 'http://localhost:8081',
     filter_shorts INTEGER DEFAULT 1,
+    video_quality TEXT DEFAULT 'best',
     created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
     updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
   )`, (err) => {
@@ -47,8 +48,8 @@ function initDatabase() {
         if (err) {
           console.error('Error checking settings:', err.message);
         } else if (row.count === 0) {
-          db.run(`INSERT INTO settings (aria2c_ip, aria2c_port, download_folder, username, password, metube_url, filter_shorts) 
-                  VALUES ('localhost', '6800', '/downloads', '', '', 'http://localhost:8081', 1)`);
+          db.run(`INSERT INTO settings (aria2c_ip, aria2c_port, download_folder, username, password, metube_url, filter_shorts, video_quality) 
+                  VALUES ('localhost', '6800', '/downloads', '', '', 'http://localhost:8081', 1, 'best')`);
         }
       });
       
@@ -56,6 +57,13 @@ function initDatabase() {
       db.run(`ALTER TABLE settings ADD COLUMN filter_shorts INTEGER DEFAULT 1`, (err) => {
         if (err && !err.message.includes('duplicate column name')) {
           console.error('Error adding filter_shorts column:', err.message);
+        }
+      });
+      
+      // Add video_quality column if it doesn't exist (for existing databases)
+      db.run(`ALTER TABLE settings ADD COLUMN video_quality TEXT DEFAULT 'best'`, (err) => {
+        if (err && !err.message.includes('duplicate column name')) {
+          console.error('Error adding video_quality column:', err.message);
         }
       });
     }
@@ -136,7 +144,7 @@ app.get('/api/settings', (req, res) => {
 });
 
 app.post('/api/settings', (req, res) => {
-  const { aria2c_ip, aria2c_port, download_folder, username, password, metube_url, filter_shorts } = req.body;
+  const { aria2c_ip, aria2c_port, download_folder, username, password, metube_url, filter_shorts, video_quality } = req.body;
   
   // Use default values for backward compatibility
   const aria2c_ip_val = aria2c_ip || 'localhost';
@@ -146,6 +154,7 @@ app.post('/api/settings', (req, res) => {
   const password_val = password || '';
   const metube_url_val = metube_url || 'http://localhost:8081';
   const filter_shorts_val = filter_shorts ? 1 : 0;
+  const video_quality_val = video_quality || 'best';
   
   db.run(`UPDATE settings SET 
           aria2c_ip = ?, 
@@ -155,9 +164,10 @@ app.post('/api/settings', (req, res) => {
           password = ?,
           metube_url = ?,
           filter_shorts = ?,
+          video_quality = ?,
           updated_at = CURRENT_TIMESTAMP
           WHERE id = (SELECT id FROM settings ORDER BY id DESC LIMIT 1)`,
-    [aria2c_ip_val, aria2c_port_val, download_folder_val, username_val, password_val, metube_url_val, filter_shorts_val],
+    [aria2c_ip_val, aria2c_port_val, download_folder_val, username_val, password_val, metube_url_val, filter_shorts_val, video_quality_val],
     function(err) {
       if (err) {
         res.status(500).json({ error: err.message });
@@ -659,7 +669,7 @@ function addToMeTube(videoUrl, title, settings, filenamePrefix) {
       // Prepare MeTube request payload
       const metubeRequest = {
         url: videoUrl,
-        quality: "best",
+        quality: settings.video_quality || "best",
         format: "any",
         playlist_strict_mode: false,
         auto_start: true,
