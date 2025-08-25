@@ -7,7 +7,7 @@
 
 body {
     font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
-    line-height: 1.6;
+    line-height: 1.4;
     color: #333;
     background-color: #f5f5f5;
 }
@@ -24,29 +24,29 @@ body {
 .header {
     background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
     color: white;
-    padding: 1rem;
+    padding: 0.75rem;
     text-align: center;
     box-shadow: 0 2px 4px rgba(0,0,0,0.1);
 }
 
 .header h1 {
-    font-size: 1.5rem;
+    font-size: 1.3rem;
     font-weight: 600;
 }
 
 /* Main content */
 .main-content {
     flex: 1;
-    padding: 1rem;
-    padding-bottom: 80px; /* Space for bottom nav */
+    padding: 0.75rem;
+    padding-bottom: 70px; /* Reduced space for bottom nav */
 }
 
 .page-header {
-    margin-bottom: 1.5rem;
+    margin-bottom: 1rem;
 }
 
 .page-header h2 {
-    font-size: 1.8rem;
+    font-size: 1.5rem;
     font-weight: 600;
     color: #2c3e50;
 }
@@ -54,19 +54,19 @@ body {
 /* Content area */
 .content-area {
     background: white;
-    border-radius: 12px;
-    padding: 1.5rem;
+    border-radius: 8px;
+    padding: 1rem;
     box-shadow: 0 2px 8px rgba(0,0,0,0.1);
-    min-height: 300px;
+    min-height: 250px;
 }
 
 .placeholder {
     display: flex;
     align-items: center;
     justify-content: center;
-    height: 200px;
+    height: 150px;
     color: #7f8c8d;
-    font-size: 1.1rem;
+    font-size: 1rem;
 }
 
 /* Bottom navigation */
@@ -78,7 +78,7 @@ body {
     background: white;
     display: flex;
     justify-content: space-around;
-    padding: 0.75rem 0;
+    padding: 0.5rem 0;
     box-shadow: 0 -2px 10px rgba(0,0,0,0.1);
     border-top: 1px solid #e0e0e0;
 }
@@ -89,10 +89,10 @@ body {
     align-items: center;
     text-decoration: none;
     color: #7f8c8d;
-    padding: 0.5rem;
-    border-radius: 8px;
+    padding: 0.4rem;
+    border-radius: 6px;
     transition: all 0.3s ease;
-    min-width: 60px;
+    min-width: 50px;
 }
 
 .nav-item:hover {
@@ -106,12 +106,12 @@ body {
 }
 
 .nav-icon {
-    font-size: 1.5rem;
-    margin-bottom: 0.25rem;
+    font-size: 1.3rem;
+    margin-bottom: 0.2rem;
 }
 
 .nav-label {
-    font-size: 0.75rem;
+    font-size: 0.7rem;
     font-weight: 500;
 }
 
@@ -121,23 +121,23 @@ body {
 }
 
 .form-group {
-    margin-bottom: 1.5rem;
+    margin-bottom: 1rem;
 }
 
 .form-group label {
     display: block;
-    margin-bottom: 0.5rem;
+    margin-bottom: 0.4rem;
     font-weight: 600;
     color: #2c3e50;
-    font-size: 0.95rem;
+    font-size: 0.9rem;
 }
 
 .form-group input {
     width: 100%;
-    padding: 0.75rem;
+    padding: 0.6rem;
     border: 2px solid #e0e0e0;
-    border-radius: 8px;
-    font-size: 1rem;
+    border-radius: 6px;
+    font-size: 0.95rem;
     transition: border-color 0.3s ease;
     background-color: #fafafa;
 }
@@ -155,21 +155,21 @@ body {
 
 .form-help {
     display: block;
-    margin-top: 0.25rem;
-    font-size: 0.875rem;
+    margin-top: 0.2rem;
+    font-size: 0.8rem;
     color: #6c757d;
 }
 
 .form-actions {
-    margin-top: 2rem;
+    margin-top: 1.5rem;
     text-align: center;
 }
 
 .btn {
-    padding: 0.75rem 2rem;
+    padding: 0.6rem 1.5rem;
     border: none;
-    border-radius: 8px;
-    font-size: 1rem;
+    border-radius: 6px;
+    font-size: 0.9rem;
     font-weight: 600;
     cursor: pointer;
     transition: all 0.3s ease;
@@ -183,8 +183,8 @@ body {
 }
 
 .btn-primary:hover {
-    transform: translateY(-2px);
-    box-shadow: 0 4px 12px rgba(102, 126, 234, 0.4);
+    transform: translateY(-1px);
+    box-shadow: 0 3px 8px rgba(102, 126, 234, 0.4);
 }
 
 .btn-primary:active {
@@ -193,9 +193,9 @@ body {
 
 /* Messages */
 .message {
-    margin-top: 1rem;
-    padding: 0.75rem;
-    border-radius: 8px;
+    margin-top: 0.75rem;
+    padding: 0.6rem;
+    border-radius: 6px;
     text-align: center;
     font-weight: 500;
     opacity: 0;
@@ -218,15 +218,15 @@ body {
 
 /* Channel Form */
 .form-section {
-    margin-bottom: 2rem;
-    padding-bottom: 1.5rem;
+    margin-bottom: 1.5rem;
+    padding-bottom: 1rem;
     border-bottom: 1px solid #e0e0e0;
 }
 
 .form-section h3 {
-    margin-bottom: 1rem;
+    margin-bottom: 0.75rem;
     color: #2c3e50;
-    font-size: 1.3rem;
+    font-size: 1.1rem;
 }
 
 .channel-form {
@@ -236,35 +236,35 @@ body {
 .form-row {
     display: flex;
     flex-direction: column;
-    gap: 1rem;
+    gap: 0.75rem;
 }
 
 .form-group small {
     display: block;
-    margin-top: 0.25rem;
-    font-size: 0.8rem;
+    margin-top: 0.2rem;
+    font-size: 0.75rem;
     color: #7f8c8d;
 }
 
 /* Channels List */
 .channels-section h3 {
-    margin-bottom: 1rem;
+    margin-bottom: 0.75rem;
     color: #2c3e50;
-    font-size: 1.3rem;
+    font-size: 1.1rem;
 }
 
 .channels-list {
-    margin-bottom: 1.5rem;
+    margin-bottom: 1rem;
 }
 
 .channel-item {
     display: flex;
     justify-content: space-between;
     align-items: center;
-    padding: 1rem;
-    margin-bottom: 0.75rem;
+    padding: 0.75rem;
+    margin-bottom: 0.5rem;
     background: #f8f9fa;
-    border-radius: 8px;
+    border-radius: 6px;
     border: 1px solid #e9ecef;
     transition: all 0.3s ease;
 }
@@ -272,7 +272,7 @@ body {
 .channel-item:hover {
     background: #e9ecef;
     transform: translateY(-1px);
-    box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+    box-shadow: 0 2px 6px rgba(0,0,0,0.1);
 }
 
 .channel-info {
@@ -282,29 +282,29 @@ body {
 .channel-name {
     font-weight: 600;
     color: #2c3e50;
-    font-size: 1.1rem;
-    margin-bottom: 0.25rem;
+    font-size: 1rem;
+    margin-bottom: 0.2rem;
 }
 
 .channel-id {
     font-family: monospace;
     color: #6c757d;
-    font-size: 0.9rem;
-    margin-bottom: 0.25rem;
+    font-size: 0.85rem;
+    margin-bottom: 0.2rem;
 }
 
 .channel-date {
-    font-size: 0.8rem;
+    font-size: 0.75rem;
     color: #7f8c8d;
 }
 
 .channel-actions {
-    margin-left: 1rem;
+    margin-left: 0.75rem;
 }
 
 .btn-sm {
-    padding: 0.5rem 1rem;
-    font-size: 0.9rem;
+    padding: 0.4rem 0.8rem;
+    font-size: 0.8rem;
 }
 
 .btn-danger {
@@ -314,7 +314,7 @@ body {
 
 .btn-danger:hover {
     transform: translateY(-1px);
-    box-shadow: 0 4px 12px rgba(231, 76, 60, 0.4);
+    box-shadow: 0 3px 8px rgba(231, 76, 60, 0.4);
 }
 
 .btn-success {
@@ -324,7 +324,7 @@ body {
 
 .btn-success:hover {
     transform: translateY(-1px);
-    box-shadow: 0 4px 12px rgba(40, 167, 69, 0.4);
+    box-shadow: 0 3px 8px rgba(40, 167, 69, 0.4);
 }
 
 .btn-info {
@@ -334,7 +334,7 @@ body {
 
 .btn-info:hover {
     transform: translateY(-1px);
-    box-shadow: 0 4px 12px rgba(23, 162, 184, 0.4);
+    box-shadow: 0 3px 8px rgba(23, 162, 184, 0.4);
 }
 
 .btn-secondary {
@@ -345,15 +345,15 @@ body {
 .btn-secondary:hover {
     background: #5a6268;
     transform: translateY(-1px);
-    box-shadow: 0 4px 12px rgba(108, 117, 125, 0.4);
+    box-shadow: 0 3px 8px rgba(108, 117, 125, 0.4);
 }
 
 /* Loading and Empty States */
 .loading, .empty-state, .error {
     text-align: center;
-    padding: 2rem;
+    padding: 1.5rem;
     color: #7f8c8d;
-    font-size: 1.1rem;
+    font-size: 1rem;
 }
 
 .error {
@@ -362,53 +362,53 @@ body {
 
 /* Pagination */
 .pagination {
-    margin-top: 1.5rem;
+    margin-top: 1rem;
 }
 
 .pagination-controls {
     display: flex;
     justify-content: center;
     align-items: center;
-    gap: 1rem;
+    gap: 0.75rem;
     flex-wrap: wrap;
 }
 
 .page-info {
     font-weight: 500;
     color: #6c757d;
-    padding: 0.5rem 1rem;
+    padding: 0.4rem 0.8rem;
     background: #f8f9fa;
-    border-radius: 6px;
+    border-radius: 4px;
     border: 1px solid #e9ecef;
 }
 
 /* Videos List */
 .videos-header {
-    margin-bottom: 1.5rem;
+    margin-bottom: 1rem;
 }
 
 .videos-header h3 {
-    margin-bottom: 0.5rem;
+    margin-bottom: 0.4rem;
     color: #2c3e50;
-    font-size: 1.3rem;
+    font-size: 1.1rem;
 }
 
 .videos-header p {
     color: #7f8c8d;
-    font-size: 0.95rem;
+    font-size: 0.9rem;
 }
 
 .videos-list {
-    margin-bottom: 1.5rem;
+    margin-bottom: 1rem;
 }
 
 .video-item {
     display: flex;
-    gap: 1rem;
-    padding: 1rem;
-    margin-bottom: 1rem;
+    gap: 0.75rem;
+    padding: 0.75rem;
+    margin-bottom: 0.75rem;
     background: #f8f9fa;
-    border-radius: 8px;
+    border-radius: 6px;
     border: 1px solid #e9ecef;
     transition: all 0.3s ease;
 }
@@ -416,21 +416,21 @@ body {
 .video-item:hover {
     background: #e9ecef;
     transform: translateY(-1px);
-    box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+    box-shadow: 0 2px 6px rgba(0,0,0,0.1);
 }
 
 .video-thumbnail {
     flex-shrink: 0;
-    width: 120px;
-    height: 90px;
-    border-radius: 6px;
+    width: 100px;
+    height: 75px;
+    border-radius: 4px;
     overflow: hidden;
     background: #ddd;
     display: flex;
     align-items: center;
     justify-content: center;
     color: #999;
-    font-size: 0.8rem;
+    font-size: 0.7rem;
     text-align: center;
 }
 
@@ -443,52 +443,52 @@ body {
 .video-thumbnail:empty::before {
     content: "No Thumbnail";
     color: #999;
-    font-size: 0.8rem;
+    font-size: 0.7rem;
 }
 
 .video-info {
     flex: 1;
     display: flex;
     flex-direction: column;
-    gap: 0.5rem;
+    gap: 0.4rem;
 }
 
 .video-title {
     font-weight: 600;
     color: #2c3e50;
-    font-size: 1.1rem;
-    line-height: 1.3;
+    font-size: 1rem;
+    line-height: 1.2;
 }
 
 .video-channel {
     font-weight: 500;
     color: #667eea;
-    font-size: 0.9rem;
+    font-size: 0.85rem;
 }
 
 .video-date {
-    font-size: 0.8rem;
+    font-size: 0.75rem;
     color: #7f8c8d;
 }
 
 .video-description {
-    font-size: 0.9rem;
+    font-size: 0.85rem;
     color: #6c757d;
-    line-height: 1.4;
+    line-height: 1.3;
 }
 
 .video-actions {
     margin-top: auto;
     display: flex;
-    gap: 0.5rem;
+    gap: 0.4rem;
     flex-wrap: wrap;
 }
 
 /* Channel Actions */
 .channel-actions {
-    margin-left: 1rem;
+    margin-left: 0.75rem;
     display: flex;
-    gap: 0.5rem;
+    gap: 0.4rem;
     flex-direction: column;
 }
 
@@ -500,26 +500,26 @@ body {
 
 /* Bulk Import Styles */
 .form-section {
-    margin-bottom: 2rem;
-    padding: 1.5rem;
+    margin-bottom: 1.5rem;
+    padding: 1rem;
     background: #f8f9fa;
-    border-radius: 8px;
+    border-radius: 6px;
     border: 1px solid #e9ecef;
 }
 
 .form-section h3 {
-    margin-bottom: 1rem;
+    margin-bottom: 0.75rem;
     color: #2c3e50;
-    font-size: 1.2rem;
+    font-size: 1.1rem;
 }
 
 .form-group {
-    margin-bottom: 1rem;
+    margin-bottom: 0.75rem;
 }
 
 .form-group label {
     display: block;
-    margin-bottom: 0.5rem;
+    margin-bottom: 0.4rem;
     font-weight: 500;
     color: #2c3e50;
 }
@@ -527,10 +527,10 @@ body {
 .form-group input,
 .form-group textarea {
     width: 100%;
-    padding: 0.75rem;
+    padding: 0.6rem;
     border: 1px solid #ddd;
-    border-radius: 6px;
-    font-size: 1rem;
+    border-radius: 4px;
+    font-size: 0.95rem;
     transition: border-color 0.3s ease;
 }
 
@@ -543,22 +543,22 @@ body {
 
 .form-group small {
     display: block;
-    margin-top: 0.25rem;
-    font-size: 0.85rem;
+    margin-top: 0.2rem;
+    font-size: 0.8rem;
     color: #6c757d;
 }
 
 .form-actions {
-    margin-top: 1rem;
+    margin-top: 0.75rem;
 }
 
 .btn-success {
     background-color: #28a745;
     color: white;
     border: none;
-    padding: 0.75rem 1.5rem;
-    border-radius: 6px;
-    font-size: 1rem;
+    padding: 0.6rem 1.2rem;
+    border-radius: 4px;
+    font-size: 0.9rem;
     cursor: pointer;
     transition: background-color 0.3s ease;
 }
@@ -574,32 +574,32 @@ body {
 
 /* Dashboard Styles */
 .dashboard-section {
-    margin-bottom: 2rem;
-    padding: 1.5rem;
+    margin-bottom: 1.5rem;
+    padding: 1rem;
     background: #f8f9fa;
-    border-radius: 8px;
+    border-radius: 6px;
     border: 1px solid #e9ecef;
 }
 
 .dashboard-section h3 {
-    margin-bottom: 1rem;
+    margin-bottom: 0.75rem;
     color: #2c3e50;
-    font-size: 1.3rem;
+    font-size: 1.1rem;
 }
 
 .dashboard-section p {
     color: #6c757d;
-    margin-bottom: 1.5rem;
+    margin-bottom: 1rem;
 }
 
 .auto-check-controls {
-    margin-bottom: 1.5rem;
+    margin-bottom: 1rem;
 }
 
 .status-message {
-    margin-top: 1rem;
-    padding: 0.75rem;
-    border-radius: 6px;
+    margin-top: 0.75rem;
+    padding: 0.6rem;
+    border-radius: 4px;
     font-weight: 500;
 }
 
@@ -622,92 +622,92 @@ body {
 }
 
 .results-section {
-    margin-top: 1.5rem;
-    padding: 1rem;
+    margin-top: 1rem;
+    padding: 0.75rem;
     background: white;
-    border-radius: 6px;
+    border-radius: 4px;
     border: 1px solid #dee2e6;
 }
 
 .results-section h4 {
-    margin-bottom: 1rem;
+    margin-bottom: 0.75rem;
     color: #2c3e50;
 }
 
 .results-grid {
     display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
-    gap: 1rem;
-    margin-bottom: 1rem;
+    grid-template-columns: repeat(auto-fit, minmax(100px, 1fr));
+    gap: 0.75rem;
+    margin-bottom: 0.75rem;
 }
 
 .result-item {
     text-align: center;
-    padding: 1rem;
+    padding: 0.75rem;
     background: #f8f9fa;
-    border-radius: 6px;
+    border-radius: 4px;
     border: 1px solid #e9ecef;
 }
 
 .result-number {
-    font-size: 1.5rem;
+    font-size: 1.3rem;
     font-weight: bold;
     color: #007bff;
-    margin-bottom: 0.5rem;
+    margin-bottom: 0.4rem;
 }
 
 .result-label {
-    font-size: 0.9rem;
+    font-size: 0.8rem;
     color: #6c757d;
 }
 
 .errors-section {
-    margin-top: 1rem;
-    padding: 1rem;
+    margin-top: 0.75rem;
+    padding: 0.75rem;
     background: #f8d7da;
     border: 1px solid #f5c6cb;
-    border-radius: 6px;
+    border-radius: 4px;
 }
 
 .errors-section h5 {
     color: #721c24;
-    margin-bottom: 0.5rem;
+    margin-bottom: 0.4rem;
 }
 
 .errors-section ul {
     margin: 0;
-    padding-left: 1.5rem;
+    padding-left: 1.2rem;
     color: #721c24;
 }
 
 .errors-section li {
-    margin-bottom: 0.25rem;
+    margin-bottom: 0.2rem;
 }
 
 .stats-grid {
     display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
-    gap: 1rem;
+    grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+    gap: 0.75rem;
 }
 
 .stat-card {
     text-align: center;
-    padding: 1.5rem;
+    padding: 1rem;
     background: white;
-    border-radius: 8px;
+    border-radius: 6px;
     border: 1px solid #e9ecef;
     box-shadow: 0 2px 4px rgba(0,0,0,0.1);
 }
 
 .stat-number {
-    font-size: 2rem;
+    font-size: 1.5rem;
     font-weight: bold;
     color: #007bff;
-    margin-bottom: 0.5rem;
+    margin-bottom: 0.4rem;
 }
 
 .stat-label {
-    font-size: 0.9rem;
+    font-size: 0.8rem;
     color: #6c757d;
     text-transform: uppercase;
     letter-spacing: 0.5px;
@@ -717,20 +717,20 @@ body {
 .scheduler-controls {
     display: flex;
     flex-direction: column;
-    gap: 1rem;
+    gap: 0.75rem;
 }
 
 .scheduler-status {
     display: flex;
     align-items: center;
-    gap: 0.5rem;
+    gap: 0.4rem;
 }
 
 .status-indicator {
     font-weight: bold;
-    padding: 0.5rem 1rem;
-    border-radius: 20px;
-    font-size: 0.9rem;
+    padding: 0.4rem 0.8rem;
+    border-radius: 16px;
+    font-size: 0.8rem;
 }
 
 .status-indicator.running {
@@ -747,16 +747,16 @@ body {
 
 .scheduler-buttons {
     display: flex;
-    gap: 1rem;
+    gap: 0.75rem;
 }
 
 .btn-danger {
     background-color: #dc3545;
     color: white;
     border: none;
-    padding: 0.75rem 1.5rem;
-    border-radius: 6px;
-    font-size: 1rem;
+    padding: 0.6rem 1.2rem;
+    border-radius: 4px;
+    font-size: 0.9rem;
     cursor: pointer;
     transition: background-color 0.3s ease;
 }
@@ -778,15 +778,15 @@ body {
     }
     
     .header h1 {
-        font-size: 2rem;
+        font-size: 1.8rem;
     }
     
     .page-header h2 {
-        font-size: 2.2rem;
+        font-size: 1.8rem;
     }
     
     .content-area {
-        padding: 2rem;
+        padding: 1.5rem;
     }
     
     .settings-form {
@@ -796,7 +796,7 @@ body {
     
     .form-row {
         flex-direction: row;
-        gap: 1.5rem;
+        gap: 1rem;
     }
     
     .form-row .form-group {
@@ -804,15 +804,15 @@ body {
     }
     
     .nav-item {
-        min-width: 80px;
+        min-width: 70px;
     }
     
     .nav-icon {
-        font-size: 1.8rem;
+        font-size: 1.5rem;
     }
     
     .nav-label {
-        font-size: 0.85rem;
+        font-size: 0.8rem;
     }
 }
 
@@ -822,7 +822,7 @@ body {
     }
     
     .content-area {
-        padding: 2.5rem;
+        padding: 2rem;
     }
 }
 
@@ -830,40 +830,40 @@ body {
 .current-download {
     background: #f8f9fa;
     border: 1px solid #dee2e6;
-    border-radius: 8px;
-    padding: 1rem;
-    margin-bottom: 1.5rem;
+    border-radius: 6px;
+    padding: 0.75rem;
+    margin-bottom: 1rem;
 }
 
 .download-status h4 {
-    margin: 0 0 0.5rem 0;
+    margin: 0 0 0.4rem 0;
     color: #495057;
-    font-size: 1rem;
+    font-size: 0.9rem;
 }
 
 .download-info {
     display: flex;
     flex-direction: column;
-    gap: 0.5rem;
+    gap: 0.4rem;
 }
 
 .download-title {
     font-weight: 600;
     color: #212529;
-    font-size: 0.9rem;
+    font-size: 0.85rem;
 }
 
 .download-progress {
     display: flex;
     flex-direction: column;
-    gap: 0.25rem;
+    gap: 0.2rem;
 }
 
 .progress-bar {
     width: 100%;
-    height: 8px;
+    height: 6px;
     background-color: #e9ecef;
-    border-radius: 4px;
+    border-radius: 3px;
     overflow: hidden;
 }
 
@@ -871,11 +871,11 @@ body {
     height: 100%;
     background-color: #007bff;
     transition: width 0.3s ease;
-    border-radius: 4px;
+    border-radius: 3px;
 }
 
 .progress-text {
-    font-size: 0.8rem;
+    font-size: 0.75rem;
     color: #6c757d;
     text-align: center;
 }
@@ -883,23 +883,23 @@ body {
 .download-details {
     display: flex;
     justify-content: space-between;
-    font-size: 0.8rem;
+    font-size: 0.75rem;
     color: #6c757d;
 }
 
 .download-speed, .download-eta {
     background: #e9ecef;
-    padding: 0.25rem 0.5rem;
-    border-radius: 4px;
+    padding: 0.2rem 0.4rem;
+    border-radius: 3px;
 }
 
 .status-badge {
     display: inline-block;
-    padding: 0.25rem 0.5rem;
-    border-radius: 4px;
-    font-size: 0.8rem;
+    padding: 0.2rem 0.4rem;
+    border-radius: 3px;
+    font-size: 0.75rem;
     font-weight: 500;
-    margin: 0.5rem 0;
+    margin: 0.4rem 0;
 }
 
 .status-pending {
@@ -940,11 +940,11 @@ body {
 
 .modal-content {
     background-color: #fefefe;
-    margin: 5% auto;
+    margin: 3% auto;
     padding: 0;
-    border-radius: 8px;
+    border-radius: 6px;
     width: 90%;
-    max-width: 600px;
+    max-width: 500px;
     box-shadow: 0 4px 20px rgba(0,0,0,0.3);
 }
 
@@ -952,10 +952,10 @@ body {
     display: flex;
     justify-content: space-between;
     align-items: center;
-    padding: 1rem 1.5rem;
+    padding: 0.75rem 1rem;
     border-bottom: 1px solid #dee2e6;
     background-color: #f8f9fa;
-    border-radius: 8px 8px 0 0;
+    border-radius: 6px 6px 0 0;
 }
 
 .modal-header h4 {
@@ -965,7 +965,7 @@ body {
 
 .close {
     color: #aaa;
-    font-size: 28px;
+    font-size: 24px;
     font-weight: bold;
     cursor: pointer;
     line-height: 1;
@@ -977,15 +977,15 @@ body {
 }
 
 .modal-body {
-    padding: 1.5rem;
+    padding: 1rem;
 }
 
 .command-container {
     background-color: #f8f9fa;
     border: 1px solid #dee2e6;
-    border-radius: 6px;
-    padding: 1rem;
-    margin: 1rem 0;
+    border-radius: 4px;
+    padding: 0.75rem;
+    margin: 0.75rem 0;
     position: relative;
 }
 
@@ -993,32 +993,32 @@ body {
     display: block;
     background-color: #2d3748;
     color: #e2e8f0;
-    padding: 1rem;
-    border-radius: 4px;
+    padding: 0.75rem;
+    border-radius: 3px;
     font-family: 'Courier New', monospace;
-    font-size: 0.9rem;
-    line-height: 1.4;
+    font-size: 0.85rem;
+    line-height: 1.3;
     word-break: break-all;
     white-space: pre-wrap;
-    margin-bottom: 1rem;
+    margin-bottom: 0.75rem;
 }
 
 .command-container .btn {
     position: absolute;
-    top: 1rem;
-    right: 1rem;
+    top: 0.75rem;
+    right: 0.75rem;
 }
 
 .command-info {
     background-color: #e9ecef;
-    border-radius: 6px;
-    padding: 1rem;
-    margin-top: 1rem;
+    border-radius: 4px;
+    padding: 0.75rem;
+    margin-top: 0.75rem;
 }
 
 .command-info p {
-    margin: 0.5rem 0;
-    font-size: 0.9rem;
+    margin: 0.4rem 0;
+    font-size: 0.85rem;
 }
 
 /* Dark mode support */
