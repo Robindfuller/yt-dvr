@@ -193,9 +193,27 @@ app.post('/api/channels', (req, res) => {
 });
 
 app.get('/api/channels', (req, res) => {
-  const page = parseInt(req.query.page) || 1;
-  const limit = parseInt(req.query.limit) || 10;
-  const offset = (page - 1) * limit;
+  const page = parseInt(req.query.page);
+  const limit = parseInt(req.query.limit);
+  
+  // If no pagination parameters are provided, return all channels
+  if (!page && !limit) {
+    db.all(`SELECT * FROM channels ORDER BY name ASC`, (err, rows) => {
+      if (err) {
+        res.status(500).json({ error: err.message });
+      } else {
+        res.json({
+          channels: rows
+        });
+      }
+    });
+    return;
+  }
+  
+  // Pagination logic for when parameters are provided
+  const pageNum = page || 1;
+  const limitNum = limit || 10;
+  const offset = (pageNum - 1) * limitNum;
   
   // Get total count
   db.get("SELECT COUNT(*) as total FROM channels", (err, countRow) => {
@@ -205,23 +223,23 @@ app.get('/api/channels', (req, res) => {
     
     // Get paginated channels
     db.all(`SELECT * FROM channels ORDER BY name ASC LIMIT ? OFFSET ?`,
-      [limit, offset],
+      [limitNum, offset],
       (err, rows) => {
         if (err) {
           res.status(500).json({ error: err.message });
         } else {
           const total = countRow.total;
-          const totalPages = Math.ceil(total / limit);
+          const totalPages = Math.ceil(total / limitNum);
           
           res.json({
             channels: rows,
             pagination: {
-              page,
-              limit,
+              page: pageNum,
+              limit: limitNum,
               total,
               totalPages,
-              hasNext: page < totalPages,
-              hasPrev: page > 1
+              hasNext: pageNum < totalPages,
+              hasPrev: pageNum > 1
             }
           });
         }
@@ -483,9 +501,32 @@ function saveVideosToDatabase(videos, channelId) {
 
 // Video API Routes
 app.get('/api/videos', (req, res) => {
-  const page = parseInt(req.query.page) || 1;
-  const limit = parseInt(req.query.limit) || 10;
-  const offset = (page - 1) * limit;
+  const page = parseInt(req.query.page);
+  const limit = parseInt(req.query.limit);
+  
+  // If no pagination parameters are provided, return all videos
+  if (!page && !limit) {
+    db.all(`SELECT v.*, c.name as channel_name 
+            FROM videos v 
+            JOIN channels c ON v.channel_id = c.id 
+            ORDER BY v.published_at DESC`,
+      (err, rows) => {
+        if (err) {
+          res.status(500).json({ error: err.message });
+        } else {
+          res.json({
+            videos: rows
+          });
+        }
+      }
+    );
+    return;
+  }
+  
+  // Pagination logic for when parameters are provided
+  const pageNum = page || 1;
+  const limitNum = limit || 10;
+  const offset = (pageNum - 1) * limitNum;
   
   // Get total count
   db.get("SELECT COUNT(*) as total FROM videos", (err, countRow) => {
@@ -499,23 +540,23 @@ app.get('/api/videos', (req, res) => {
             JOIN channels c ON v.channel_id = c.id 
             ORDER BY v.published_at DESC 
             LIMIT ? OFFSET ?`,
-      [limit, offset],
+      [limitNum, offset],
       (err, rows) => {
         if (err) {
           res.status(500).json({ error: err.message });
         } else {
           const total = countRow.total;
-          const totalPages = Math.ceil(total / limit);
+          const totalPages = Math.ceil(total / limitNum);
           
           res.json({
             videos: rows,
             pagination: {
-              page,
-              limit,
+              page: pageNum,
+              limit: limitNum,
               total,
               totalPages,
-              hasNext: page < totalPages,
-              hasPrev: page > 1
+              hasNext: pageNum < totalPages,
+              hasPrev: pageNum > 1
             }
           });
         }

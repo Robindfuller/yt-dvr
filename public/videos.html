@@ -97,8 +97,15 @@
             
             <div class="content-area">
                 <div class="videos-header">
-                    <h3>Latest Videos</h3>
-                    <p>Videos from your subscribed channels, sorted by release date</p>
+                    <div class="videos-header-content">
+                        <h3>Latest Videos</h3>
+                        <p>Videos from your subscribed channels, sorted by release date</p>
+                    </div>
+                    <div class="filter-controls">
+                        <select id="channelFilter" onchange="filterVideos()">
+                            <option value="">All Channels</option>
+                        </select>
+                    </div>
                 </div>
                 
                 <!-- Command Display Modal -->
@@ -125,9 +132,6 @@
                 <div id="videosList" class="videos-list">
                     <div class="loading">Loading videos...</div>
                 </div>
-                
-                <!-- Pagination -->
-                <div id="pagination" class="pagination"></div>
             </div>
         </main>
         
@@ -152,28 +156,23 @@
     </div>
 
     <script>
-        let currentPage = 1;
-        const videosPerPage = 10;
-
         // Load videos when page loads
         document.addEventListener('DOMContentLoaded', function() {
             loadVideos();
         });
 
-        function loadVideos(page = 1) {
-            currentPage = page;
+        function loadVideos() {
             const videosList = document.getElementById('videosList');
             videosList.innerHTML = '<div class="loading">Loading videos...</div>';
 
-            fetch(`/api/videos?page=${page}&limit=${videosPerPage}`)
+            fetch('/api/videos')
                 .then(response => response.json())
                 .then(data => {
                     if (data.videos && data.videos.length > 0) {
                         displayVideos(data.videos);
-                        displayPagination(data.pagination);
+                        populateChannelFilter(data.videos);
                     } else {
                         videosList.innerHTML = '<div class="empty-state">No videos found. Add some channels and check for videos!</div>';
-                        document.getElementById('pagination').innerHTML = '';
                     }
                 })
                 .catch(error => {
@@ -212,16 +211,17 @@
                         </div>
                     </div>
                     <div class="video-info">
-                        <div class="video-title">${video.title}</div>
+                        <div class="video-header">
+                            <div class="video-title">${video.title}</div>
+                            <div class="video-actions">
+                                ${downloadButton}
+                            </div>
+                        </div>
                         <div class="video-channel">${video.channel_name}</div>
                         <div class="video-date">Published: ${publishedDate}</div>
                         <div class="video-description">${description}</div>
                         <div class="download-status">${downloadStatus}</div>
                         ${downloadRequestedInfo}
-                        <div class="video-actions">
-                            <a href="${video.video_url}" target="_blank" class="btn btn-primary btn-sm">Watch on YouTube</a>
-                            ${downloadButton}
-                        </div>
                     </div>
                 `;
                 videosList.appendChild(videoElement);
@@ -274,28 +274,34 @@
             }
         }
 
-        function displayPagination(pagination) {
-            const paginationDiv = document.getElementById('pagination');
+        function filterVideos() {
+            const filterValue = document.getElementById('channelFilter').value;
+            const videoItems = document.querySelectorAll('.video-item');
             
-            if (pagination.totalPages <= 1) {
-                paginationDiv.innerHTML = '';
-                return;
-            }
+            videoItems.forEach(item => {
+                const channelName = item.querySelector('.video-channel').textContent.toLowerCase();
+                if (!filterValue || channelName.includes(filterValue.toLowerCase())) {
+                    item.style.display = 'flex';
+                } else {
+                    item.style.display = 'none';
+                }
+            });
+        }
 
-            let paginationHTML = '<div class="pagination-controls">';
+        function populateChannelFilter(videos) {
+            const filterSelect = document.getElementById('channelFilter');
+            const existingOptions = filterSelect.querySelectorAll('option:not(:first-child)');
+            existingOptions.forEach(option => option.remove());
             
-            if (pagination.hasPrev) {
-                paginationHTML += `<button class="btn btn-secondary" onclick="loadVideos(${pagination.page - 1})">Previous</button>`;
-            }
+            const channels = [...new Set(videos.map(video => video.channel_name))];
+            channels.sort();
             
-            paginationHTML += `<span class="page-info">Page ${pagination.page} of ${pagination.totalPages}</span>`;
-            
-            if (pagination.hasNext) {
-                paginationHTML += `<button class="btn btn-secondary" onclick="loadVideos(${pagination.page + 1})">Next</button>`;
-            }
-            
-            paginationHTML += '</div>';
-            paginationDiv.innerHTML = paginationHTML;
+            channels.forEach(channel => {
+                const option = document.createElement('option');
+                option.value = channel;
+                option.textContent = channel;
+                filterSelect.appendChild(option);
+            });
         }
 
         function startDownload(videoId) {
@@ -315,7 +321,7 @@
                         'Download queued successfully!';
                     showMessage(message, 'success');
                     // Reload videos to update status
-                    setTimeout(() => loadVideos(currentPage), 1000);
+                    setTimeout(() => loadVideos(), 1000);
                 } else {
                     showMessage(`Failed to queue download: ${data.error}`, 'error');
                 }
@@ -344,7 +350,7 @@
                 if (data.success) {
                     showMessage('Download retry queued successfully!', 'success');
                     // Reload videos to update status
-                    setTimeout(() => loadVideos(currentPage), 1000);
+                    setTimeout(() => loadVideos(), 1000);
                 } else {
                     showMessage(`Failed to retry download: ${data.error}`, 'error');
                 }

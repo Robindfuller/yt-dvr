@@ -18,53 +18,67 @@
             </div>
             
             <div class="content-area">
-                <!-- Add Channel Form -->
-                <div class="form-section">
-                    <h3>Add New Channel</h3>
-                    <form id="addChannelForm" class="channel-form">
-                        <div class="form-row">
-                            <div class="form-group">
-                                <label for="channel_id">Channel ID:</label>
-                                <input type="text" id="channel_id" name="channel_id" placeholder="UC..." required>
-                                <small>YouTube channel ID (e.g., UC1234567890)</small>
-                            </div>
-                            <div class="form-group">
-                                <label for="channel_name">Channel Name:</label>
-                                <input type="text" id="channel_name" name="channel_name" placeholder="Channel Name" required>
-                            </div>
-                        </div>
-                        <div class="form-actions">
-                            <button type="submit" class="btn btn-primary">Add Channel</button>
-                        </div>
-                    </form>
-                    <div id="formMessage" class="message"></div>
-                </div>
-
-                <!-- Bulk Import Section -->
-                <div class="form-section">
-                    <h3>Bulk Import Channels</h3>
-                    <form id="bulkImportForm" class="channel-form">
-                        <div class="form-group">
-                            <label for="bulk_channels">Channel List:</label>
-                            <textarea id="bulk_channels" name="bulk_channels" rows="8" placeholder="Paste channel data in format:&#10;UC-HFqs_7nzHwg1pD-_PrLcw,http://www.youtube.com/channel/UC-HFqs_7nzHwg1pD-_PrLcw,Kent Survival&#10;UC-Rx9HRmDoc5YmtcPOopmrA,http://www.youtube.com/channel/UC-Rx9HRmDoc5YmtcPOopmrA,Travel Beans" required></textarea>
-                            <small>Format: ChannelID,ChannelURL,ChannelName (one per line). Existing channels will be ignored.</small>
-                        </div>
-                        <div class="form-actions">
-                            <button type="submit" class="btn btn-success">Bulk Import</button>
-                        </div>
-                    </form>
-                    <div id="bulkImportMessage" class="message"></div>
-                </div>
-
                 <!-- Channels List -->
                 <div class="channels-section">
-                    <h3>Your Channels</h3>
+                    <div class="channels-header">
+                        <h3>Your Channels</h3>
+                        <div class="filter-controls">
+                            <select id="channelFilter" onchange="filterChannels()">
+                                <option value="">All Channels</option>
+                            </select>
+                        </div>
+                    </div>
                     <div id="channelsList" class="channels-list">
                         <div class="loading">Loading channels...</div>
                     </div>
-                    
-                    <!-- Pagination -->
-                    <div id="pagination" class="pagination"></div>
+                </div>
+
+                <!-- Add Channel Form -->
+                <div class="form-section collapsible">
+                    <div class="collapsible-header" onclick="toggleCollapsible('addChannelSection')">
+                        <h3>Add New Channel</h3>
+                        <span class="collapsible-icon">▼</span>
+                    </div>
+                    <div id="addChannelSection" class="collapsible-content collapsed">
+                        <form id="addChannelForm" class="channel-form">
+                            <div class="form-row">
+                                <div class="form-group">
+                                    <label for="channel_id">Channel ID:</label>
+                                    <input type="text" id="channel_id" name="channel_id" placeholder="UC..." required>
+                                    <small>YouTube channel ID (e.g., UC1234567890)</small>
+                                </div>
+                                <div class="form-group">
+                                    <label for="channel_name">Channel Name:</label>
+                                    <input type="text" id="channel_name" name="channel_name" placeholder="Channel Name" required>
+                                </div>
+                            </div>
+                            <div class="form-actions">
+                                <button type="submit" class="btn btn-primary">Add Channel</button>
+                            </div>
+                        </form>
+                        <div id="formMessage" class="message"></div>
+                    </div>
+                </div>
+
+                <!-- Bulk Import Section -->
+                <div class="form-section collapsible">
+                    <div class="collapsible-header" onclick="toggleCollapsible('bulkImportSection')">
+                        <h3>Bulk Import Channels</h3>
+                        <span class="collapsible-icon">▼</span>
+                    </div>
+                    <div id="bulkImportSection" class="collapsible-content collapsed">
+                        <form id="bulkImportForm" class="channel-form">
+                            <div class="form-group">
+                                <label for="bulk_channels">Channel List:</label>
+                                <textarea id="bulk_channels" name="bulk_channels" rows="8" placeholder="Paste channel data in format:&#10;UC-HFqs_7nzHwg1pD-_PrLcw,http://www.youtube.com/channel/UC-HFqs_7nzHwg1pD-_PrLcw,Kent Survival&#10;UC-Rx9HRmDoc5YmtcPOopmrA,http://www.youtube.com/channel/UC-Rx9HRmDoc5YmtcPOopmrA,Travel Beans" required></textarea>
+                                <small>Format: ChannelID,ChannelURL,ChannelName (one per line). Existing channels will be ignored.</small>
+                            </div>
+                            <div class="form-actions">
+                                <button type="submit" class="btn btn-success">Bulk Import</button>
+                            </div>
+                        </form>
+                        <div id="bulkImportMessage" class="message"></div>
+                    </div>
                 </div>
             </div>
         </main>
@@ -90,9 +104,6 @@
     </div>
 
     <script>
-        let currentPage = 1;
-        const channelsPerPage = 10;
-
         // Load channels when page loads
         document.addEventListener('DOMContentLoaded', function() {
             loadChannels();
@@ -138,7 +149,7 @@
                     // Automatically fetch videos for the new channel
                     fetchVideosForChannel(data.id, channelName);
                     
-                    loadChannels(); // Reload the channels list
+                    loadChannels(); // Reload all channels
                 } else {
                     showFormMessage(data.error || 'Error adding channel', 'error');
                 }
@@ -167,20 +178,18 @@
             });
         }
 
-        function loadChannels(page = 1) {
-            currentPage = page;
+        function loadChannels() {
             const channelsList = document.getElementById('channelsList');
             channelsList.innerHTML = '<div class="loading">Loading channels...</div>';
 
-            fetch(`/api/channels?page=${page}&limit=${channelsPerPage}`)
+            fetch('/api/channels')
                 .then(response => response.json())
                 .then(data => {
                     if (data.channels && data.channels.length > 0) {
                         displayChannels(data.channels);
-                        displayPagination(data.pagination);
+                        populateChannelFilter(data.channels);
                     } else {
                         channelsList.innerHTML = '<div class="empty-state">No channels found. Add your first channel above!</div>';
-                        document.getElementById('pagination').innerHTML = '';
                     }
                 })
                 .catch(error => {
@@ -238,28 +247,46 @@
             });
         }
 
-        function displayPagination(pagination) {
-            const paginationDiv = document.getElementById('pagination');
-            
-            if (pagination.totalPages <= 1) {
-                paginationDiv.innerHTML = '';
-                return;
-            }
+        function toggleCollapsible(sectionId) {
+            const section = document.getElementById(sectionId);
+            const header = section.parentElement.querySelector('.collapsible-header');
+            const icon = header.querySelector('.collapsible-icon');
+            const isCollapsed = section.classList.contains('collapsed');
 
-            let paginationHTML = '<div class="pagination-controls">';
-            
-            if (pagination.hasPrev) {
-                paginationHTML += `<button class="btn btn-secondary" onclick="loadChannels(${pagination.page - 1})">Previous</button>`;
+            if (isCollapsed) {
+                section.classList.remove('collapsed');
+                icon.textContent = '▲';
+            } else {
+                section.classList.add('collapsed');
+                icon.textContent = '▼';
             }
+        }
+
+        function filterChannels() {
+            const filterValue = document.getElementById('channelFilter').value;
+            const channelItems = document.querySelectorAll('.channel-item');
             
-            paginationHTML += `<span class="page-info">Page ${pagination.page} of ${pagination.totalPages}</span>`;
+            channelItems.forEach(item => {
+                const channelName = item.querySelector('.channel-name').textContent.toLowerCase();
+                if (!filterValue || channelName.includes(filterValue.toLowerCase())) {
+                    item.style.display = 'flex';
+                } else {
+                    item.style.display = 'none';
+                }
+            });
+        }
+
+        function populateChannelFilter(channels) {
+            const filterSelect = document.getElementById('channelFilter');
+            const existingOptions = filterSelect.querySelectorAll('option:not(:first-child)');
+            existingOptions.forEach(option => option.remove());
             
-            if (pagination.hasNext) {
-                paginationHTML += `<button class="btn btn-secondary" onclick="loadChannels(${pagination.page + 1})">Next</button>`;
-            }
-            
-            paginationHTML += '</div>';
-            paginationDiv.innerHTML = paginationHTML;
+            channels.forEach(channel => {
+                const option = document.createElement('option');
+                option.value = channel.name;
+                option.textContent = channel.name;
+                filterSelect.appendChild(option);
+            });
         }
 
         function deleteChannel(channelId) {
@@ -273,7 +300,7 @@
             .then(response => response.json())
             .then(data => {
                 if (data.success) {
-                    loadChannels(currentPage); // Reload current page
+                    loadChannels(); // Reload all channels
                 } else {
                     alert('Error deleting channel: ' + (data.error || 'Unknown error'));
                 }
@@ -320,7 +347,7 @@
                 if (data.success) {
                     showBulkImportMessage(`Bulk import completed! ${data.added} channels added, ${data.skipped} already existed.`, 'success');
                     document.getElementById('bulk_channels').value = '';
-                    loadChannels(currentPage); // Reload channels list
+                    loadChannels(); // Reload all channels
                 } else {
                     showBulkImportMessage(`Bulk import failed: ${data.error}`, 'error');
                 }
